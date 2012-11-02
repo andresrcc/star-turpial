@@ -1,0 +1,19 @@
+Proyecto 2 
+
+Resources:
+http://www.arcsynthesis.org/gltut/
+http://en.wikibooks.org/wiki/OpenGL_Programming
+http://www.videotutorialsrock.com/
+http://www.glprogramming.com/red/
+
+Requerimientos:
+Unico escenario con elementos aleatorios. El jugador debe repetir varias veces el nivel para mejorar su puntuación.
+
+Reglas Basicas:
+Objetos:
+Blancos -> Objetivos a disparar. Disparo se hace con el maus. Si choca pierde puntos. Hay que echarles polomo y obtienes puntos.
+Anillos -> Obtienes puntos por anillitos que puedas atravesar
+
+La nave avanza y se encuentra con dos tipos de objetos: Blancos y Anillos.  Posición inicial de los objetos es estática. Nave se acerca y de no interactuar con ellos los deja atrás
+
+
