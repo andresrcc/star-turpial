@@ -89,26 +89,34 @@ void movimiento(figura *fig){
         //para cada caso si la velocidad es menor que el maximo permitido se recalcula,
         //de lo contrario se usa la velocidad maxima.
 
-        //velocidad en x        
-        if((*fig).vel.x <= (*fig).maxVel){
+        //velocidad en x
+	        
+        if((*fig).vel.x <= (*fig).maxVel && (*fig).vel.x >= -(*fig).maxVel){
                 (*fig).vel.x += (*fig).acc.x*nTime;
-        }else{
+        }else if((*fig).vel.x > (*fig).maxVel){
                 (*fig).vel.x = (*fig).maxVel;
-        }
+        }else{
+		(*fig).vel.x = -(*fig).maxVel;
+	}
 
         //velocidad en y
-        if((*fig).vel.y <= (*fig).maxVel){
+        if((*fig).vel.y <= (*fig).maxVel && (*fig).vel.y >= -(*fig).maxVel ){
                 (*fig).vel.y += (*fig).acc.y*nTime;
-        }else{
+        }else if((*fig).vel.y > (*fig).maxVel){
                 (*fig).vel.y = (*fig).maxVel;
-        }
+        }else{
+		(*fig).vel.y = -(*fig).maxVel;
+	}
 
         //velocidad en z
-        if((*fig).vel.z <= (*fig).maxVel){
+        if((*fig).vel.z <= (*fig).maxVel && (*fig).vel.z >= -(*fig).maxVel){
                 (*fig).vel.z += (*fig).acc.z*nTime;
-        }else{
+        }else if((*fig).vel.z > (*fig).maxVel){
                 (*fig).vel.z = (*fig).maxVel;
-        }
+        }else{
+		(*fig).vel.z = -(*fig).maxVel;
+	}
+
 
        // printf("VELOCIDAD\nx: %f\ny: %f\nz: %f\n\n",(*fig).vel.x,(*fig).vel.y,(*fig).vel.z);
 
