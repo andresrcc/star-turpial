@@ -40,7 +40,8 @@ figura nave;
 void dibujar_objetos(){
 
   //nave
-  
+  glEnable(GL_LIGHTING);
+
   glPushMatrix();
   glTranslatef(nave.x,nave.y,nave.z);
   glmUnitize(modelo_TURPIAL);
@@ -65,13 +66,14 @@ void display(){
 
   gluLookAt(0.0, //Coordenada X
 	    0.0, //Coordenada Y
-	    0.0, //Coordenada Z
+	    3.0, //Coordenada Z
 	    0.0, 0.0, 0.0, //Posicion Inicial Camara
 	    0.0, 1.0, 0.0 //Vector UP En este caso, Y
 	    );
 
   //Hay que ver como los dibujamos que vengan hacia la nave
   dibujar_objetos();
+  glutSwapBuffers();
 }
 
 /**
@@ -144,12 +146,12 @@ int main (int argc, char** argv){
   
   //Posicionamos al turpial cosmico
   nave.x = 0;
-  nave.y = 5;
+  nave.y = 0;
   nave.z = 0;
   //Podemos convertir esto en una funcion 
   //posicion objeto una vez que tengamos los objetos
 
-  modelo_TURPIAL = glmReadOBJ("objetos/HUMBIRD.OBJ");
+  modelo_TURPIAL = glmReadOBJ("objetos/f-16.obj");
   if (!modelo_TURPIAL) exit(0);
 
   glutDisplayFunc(display);
