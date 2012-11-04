@@ -323,6 +323,8 @@ void dibujar_objetos(){
 
   glPushMatrix();
   glTranslatef(objetos[0].pos.x,objetos[0].pos.y,objetos[0].pos.z);
+  glRotatef(-90.0,0,0,1);
+  glRotatef(90.0,1,0,0); 
   //printf("%f-%f-%f\n",objetos[0].pos.x,objetos[0].pos.y,objetos[0].pos.z);
   glmUnitize(modelo_TURPIAL);
   glmFacetNormals(modelo_TURPIAL);
@@ -352,7 +354,7 @@ void display(){
 
   //Camara
 
-  gluLookAt(40.0, //Coordenada X
+  gluLookAt(15.0, //Coordenada X
 	    0.0, //Coordenada Y
 	    0.0, //Coordenada Z
 	    0.0, 0.0, 0.0, //Posicion Inicial Camara
@@ -447,7 +449,7 @@ int main (int argc, char** argv){
 
   //Inicializamos la ventana
   glutInit(&argc,argv);
-  glutInitWindowSize(600,600);
+  glutInitWindowSize(600,400);
   glutInitWindowPosition(10,50);
   glutCreateWindow("Star Turpial");
  
