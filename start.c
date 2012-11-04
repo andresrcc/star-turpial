@@ -64,7 +64,7 @@ void init(){
         objetos[0].acc.y = 0;
         objetos[0].acc.z = 0;
         //velocidad
-        objetos[0].vel.x = 0;
+        objetos[0].vel.x = -2.0;
         objetos[0].vel.y = 0;
         objetos[0].vel.z = 0;
         //estado
@@ -136,7 +136,7 @@ void movimiento(figura *fig){
  * Esta funcion recibe una figura y calcula su posicion respecto al tiempo, considera que la figura puede ser movida por el usuario
  */
 void movimiento_nave(figura *fig){
-
+	/*
         if(movement_pressed_x == 0){
                 if((*fig).vel.x >= -INERTIA_DELTA && (*fig).vel.x <= INERTIA_DELTA){
                         (*fig).acc.x = 0;
@@ -147,7 +147,7 @@ void movimiento_nave(figura *fig){
                         (*fig).acc.x = (*fig).inertia;
                 }
 
-        }
+        }*/
 
         if(movement_pressed_y == 0){
                 if((*fig).vel.y >= -INERTIA_DELTA && (*fig).vel.y <= INERTIA_DELTA){
@@ -338,12 +338,86 @@ void dibujar_objetos(){
 }
 
 
+GLuint loadBMP(char * imagepath){
+        unsigned char header[54];
+        unsigned int dataPos;
+        unsigned int width, height;
+        unsigned int imageSize;
+        unsigned char * data;
+        FILE * file = fopen(imagepath, "rb");
+        if (fread(header,1,54,file)!=54){
+//              return false;
+        }
+        if (header[0]!='B' || header[1]!='M'){
+//              return 0;
+        }
+        dataPos = *(int*)&(header[0x0A]);
+        imageSize = *(int*)&(header[0x22]);
+        width = *(int*)&(header[0x12]);
+        height = *(int*)&(header[0x16]);
+        if(imageSize==0){
+                imageSize = width*height*3;
+        }
+        if(dataPos == 0){
+                dataPos = 54;
+        }
+        data = (unsigned char*)malloc(imageSize*sizeof(unsigned char));
+        fread(data,1,imageSize,file);
+        fclose(file);
+        GLuint textureID;
+        glGenTextures(1,&textureID);
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,width,height,0,GL_RGB,GL_UNSIGNED_BYTE,data);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	return textureID;
+}
+
+
+
+void drawBackground() 
+      {
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glOrtho(0, 1, 0, 1, 0, 1);
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+	
+	// No depth buffer writes for background.
+	glDepthMask(GL_FALSE);
+	glColor3f(1,1,1);
+	glBindTexture( GL_TEXTURE_2D, loadBMP("/home/moalover/Documentos/Proyectos/opengl/t2.bmp") );
+	glBegin( GL_QUADS ); 
+		glTexCoord2f( 0.0f, 0.0f );
+		glVertex2f( 0, 0 );
+		glTexCoord2f( 0.0f, 1.0f );
+		glVertex2f( 0, 1.0f );
+		glTexCoord2f( 1.0f, 1.0f );
+		glVertex2f( 1.0f, 1.0f );
+		glTexCoord2f( 1.0f, 0.0f );
+		glVertex2f( 1.0f, 0 );
+	glEnd();
+
+	glDepthMask(GL_TRUE);
+
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+      }
+
+
 
 
 
 
 
 void display(){
+  
   movimiento(&objetos[0]);
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
@@ -353,14 +427,14 @@ void display(){
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   //Camara
-
-  gluLookAt(15.0, //Coordenada X
+  
+  gluLookAt(objetos[0].pos.x+15.0, //Coordenada X
 	    0.0, //Coordenada Y
 	    0.0, //Coordenada Z
-	    0.0, 0.0, 0.0, //Posicion Inicial Camara
+	    objetos[0].pos.x, 0.0, 0.0, //Posicion Inicial Camara
 	    0.0, 0.0, 1.0 //Vector UP En este caso, Z
 	    );
-
+  drawBackground();
   //Hay que ver como los dibujamos que vengan hacia la nave
   dibujar_objetos();
   glutSwapBuffers();
