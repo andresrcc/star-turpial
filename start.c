@@ -32,12 +32,12 @@ int movement_pressed_z = 0; //1. hay una tecla presionada que afecta el movimien
 GLuint texture; //textura de fondo
 int frames = 0;//conteo de frames
 int time_a = 0.0;
-int rate = 1;
-int rate_store = 0;
-char rate_str[10];
+float rate = 1.0;
+float rate_store = 0.0;
+char rate_str[50];
 int time_d = 0.0;
 float fps = 0.0;
-char *FPS[10];
+char FPS[50];
 int puntos = 0;
 char puntaje[20];
 figura objetos[2]; //arreglo con todos los objetos, no hay razon alguna para este tamano, se arreglara cuando sepamos el numero maximo de objetos
@@ -58,7 +58,7 @@ GLMmodel *modelo_ANILLO = NULL;
 
 
 
-void print_pantalla(int x, int y, char *string)
+void print_pantalla(float x, float y, char *string)
 {
   glPushMatrix();
  // glColor3f( 0, 1, 0 );
@@ -86,7 +86,7 @@ void movimiento(figura *fig){
 	float nTime = 0-(*fig).time;
 	(*fig).time = glutGet(GLUT_ELAPSED_TIME)*0.001;
         nTime += (*fig).time;
-
+	nTime *= rate;
         //se calcula el cambio de velocidad debido a la aceleracion
         //para cada caso si la velocidad es menor que el maximo permitido se recalcula,
         //de lo contrario se usa la velocidad maxima.
@@ -158,6 +158,18 @@ void movimiento_nave(figura *fig){
                 }
         }
 	movimiento(fig);
+	if((*fig).pos.x>7.5){
+		(*fig).pos.x -= 15;
+	}
+	if((*fig).pos.x<-7.5){
+		(*fig).pos.x += 15;
+	}
+	if((*fig).pos.y>4.5){
+		(*fig).pos.y -= 9;
+	}
+	if((*fig).pos.y<-4.5){
+		(*fig).pos.y += 9;
+	}
 }
 
 
@@ -240,8 +252,17 @@ void dibujar_objetos(){
   for (i =1 ; i < 2 ; i++){
     if(objetos[i].state != 0){
       glPushMatrix();
+      GLfloat red[] = {1.0f,0.0f,0.0f,1.0f};
+      GLfloat black[] = {0.0f,0.0f,0.0f,1.0f};
+      GLfloat diffuse[] = {0.8f,0.8f,0.8f,1.0f};
+      glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , red);
+      glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , red);
+      glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , red);
       glTranslatef(objetos[i].pos.x,objetos[i].pos.y,objetos[i].pos.z);
       dibujar_cubo(0.1,0.5,0.1);
+      glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , black);
+      glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , black);
+      glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , diffuse);
       glPopMatrix();
     }
   }
@@ -339,7 +360,6 @@ void display(){
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   GLfloat lData4[] = {-1,1,0,0.0};
   glLightfv(GL_LIGHT0, GL_POSITION, lData4);
-  GLfloat lData5[] = {1,0,0};
   //Camara
   gluLookAt(0.0, //Coordenada X
 	    0.0, //Coordenada Y
@@ -351,7 +371,8 @@ void display(){
   drawBackground();
   glEnable(GL_LIGHTING);
   dibujar_objetos();
-  sprintf(rate_str,"Rate : %d",rate);
+  print_pantalla(objetos[0].pos.x,objetos[0].pos.y,".posicion");
+  sprintf(rate_str,"Rate : %f",rate);
   print_pantalla(0,4,rate_str); 
   print_pantalla(-7,-4,FPS);//Se imprime el FPS
   sprintf(puntaje,"Puntos: %d",puntos);
@@ -424,9 +445,7 @@ void teclado (unsigned char tecla, int x, int y){
        rate *= 2;
        break;
      case '-':
-       if(rate > 1){
-         rate /= 2;
-       }
+       rate /= 2;
   }
 }
 
@@ -518,8 +537,8 @@ GLvoid mouse_action(GLint button, GLint state, GLint x, GLint y){
         switch(button){
                 case GLUT_LEFT_BUTTON:
 			if(objetos[1].state != 1){
-                        	objetos[1].state = 1;
-				objetos[1].pos = objetos[0].pos;
+      				objetos[1].pos = objetos[0].pos;
+				objetos[1].state = 1;
 			}
 			 break;
         }
