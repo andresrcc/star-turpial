@@ -1,12 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <GL/glut.h>
-<<<<<<< HEAD
 #include <GL/glu.h>
 #include <GL/gl.h>
-=======
 #include <string.h>
->>>>>>> 0b89b1b75a6d5362f6dad8d0de92c03ad327b08d
 #include "glm.h"
 #include <math.h>
 
@@ -170,14 +167,14 @@ void movimiento_nave(figura *fig){
 }
 
 
-void dibujar_blanco(float x, float y, float z){
+void dibujar_blanco(){
   glPushMatrix();
   //glClear(GL_COLOR_BUFFER_BIT);
   //glLoadIdentity();
   glTranslatef(-2.0,0.0,-3.0);
   glColor3f(0.2,0.1,0.4);
   //gluDisk(quadratic,0.5,3.5,32,32);
-  glutSolidTorus(1.0,10.0,20,20);
+  glutSolidTorus(0.05,0.5,20,20);
   glPopMatrix();
 
   glFlush();
@@ -262,6 +259,8 @@ void dibujar_objetos(){
       glPopMatrix();
     }
   }
+
+  dibujar_blanco();
   //se le indica a glut que la escena debe ser redibujada
   glutPostRedisplay();
 }
