@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <GL/glut.h>
+#include <GL/glu.h>
+#include <GL/gl.h>
 #include "glm.h"
+#include <math.h>
 
 #define INERTIA_DELTA 0.001 //Delta de velocidad en el cual se considera que un objeto se detuvo completamente
 
@@ -30,7 +33,17 @@ int movement_pressed_z = 0; //1. hay una tecla presionada que afecta el movimien
 
 
 float time = 0; //tiempo del juego en milisegundos
-figura objetos[1]; //arreglo con todos los objetos
+figura objetos[2]; //arreglo con todos los objetos
+
+/*
+//Prueba1
+//Para probar la existencia de las figuras
+//Coordeadas de la Camara
+float azimut = 0.78; 
+float elevacion = 0.78;
+float distancia = 50.0;
+//END
+*/
 
 
 /**
@@ -41,8 +54,10 @@ figura objetos[1]; //arreglo con todos los objetos
  */
 
 GLMmodel *modelo_TURPIAL = NULL;
-GLMmodel *modelo_BLANCO = NULL;
-GLMmodel *modelo_ANILLO = NULL;
+
+//Para guardar objetos quadratic. Estos sirven para
+//crear los anillos y blancos con funciones de la libreria GLU
+GLUquadricObj *quadratic;
 
 
 
@@ -75,6 +90,19 @@ void init(){
         objetos[0].inertia = 1.0;
 	//parametro engineAcc
         objetos[0].engineAcc = 2.0;
+
+	//Crea apuntador a objeto quadric
+	//Crea smooth normals y coordenadas 
+	//de textura
+	quadratic = gluNewQuadric();
+	gluQuadricNormals(quadratic, GLU_SMOOTH);
+	gluQuadricTexture(quadratic, GL_TRUE);
+
+	//Posicion de un Blanco
+	objetos[1].pos.x = 0;
+        objetos[1].pos.y = 0;
+        objetos[1].pos.z = 0;
+
 }
 
 /*
@@ -175,9 +203,18 @@ void movimiento_nave(figura *fig){
 }
 
 
+void dibujar_blanco(float x, float y, float z){
+  glPushMatrix();
+  //glClear(GL_COLOR_BUFFER_BIT);
+  //glLoadIdentity();
+  glTranslatef(-2.0,0.0,-3.0);
+  glColor3f(0.2,0.1,0.4);
+  //gluDisk(quadratic,0.5,3.5,32,32);
+  glutSolidTorus(1.0,10.0,20,20);
+  glPopMatrix();
 
-
-
+  glFlush();
+}
 
 
 
@@ -273,7 +310,7 @@ void dibujar_Joe(){
   	//trasladar todo el objeto
   	//Submatrices del objeto
   	//Cabeza
-  	glColor3f(0.93f,0.81f,0.81f);
+  	glColor3f(0.93f,0.82f,0.81f);
   	glPushMatrix();
  		 glTranslatef(0,0.75,0);
  		 dibujar_cubo(0.0,0.0,0.0,0.5,0.5,0.5);
@@ -316,11 +353,13 @@ void dibujar_Joe(){
 }
 
 
-void dibujar_objetos(){
-  movimiento_nave(&objetos[0]);
+void dibujar_nave(){
+
+ movimiento_nave(&objetos[0]);
   //nave
   glEnable(GL_LIGHTING);
 
+  //Dibujar nave
   glPushMatrix();
   glTranslatef(objetos[0].pos.x,objetos[0].pos.y,objetos[0].pos.z);
   glRotatef(-90.0,0,0,1);
@@ -331,10 +370,14 @@ void dibujar_objetos(){
   glmVertexNormals(modelo_TURPIAL, 90.0);
   glEnable(GL_COLOR_MATERIAL);
   glmDraw(modelo_TURPIAL, GLM_SMOOTH | GLM_MATERIAL);
-  //dibujar_Joe();
   glPopMatrix();
 
-  glutPostRedisplay();
+}
+
+void dibujar_objetos(){
+
+  dibujar_nave();
+  dibujar_blanco(objetos[1].pos.x,objetos[1].pos.y, objetos[1].pos.z); 
 }
 
 
@@ -345,6 +388,7 @@ void dibujar_objetos(){
 
 void display(){
   movimiento(&objetos[0]);
+  //Carga matriz modelo vista.
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
@@ -354,16 +398,30 @@ void display(){
 
   //Camara
 
-  gluLookAt(15.0, //Coordenada X
+    gluLookAt(15.0, //Coordenada X
 	    0.0, //Coordenada Y
 	    0.0, //Coordenada Z
 	    0.0, 0.0, 0.0, //Posicion Inicial Camara
 	    0.0, 0.0, 1.0 //Vector UP En este caso, Z
 	    );
+  
+
+  //Prueba2
+  /*   gluLookAt(distancia * sin(elevacion) * sin(azimut),
+	   distancia * cos(elevacion),
+           distancia * sin(elevacion) * cos(azimut),
+	   0.0,0.0,0.0,
+           0.0,1.0,0.0);
+   //End
+   */
 
   //Hay que ver como los dibujamos que vengan hacia la nave
   dibujar_objetos();
-  glutSwapBuffers();
+
+  //  glFlush();
+   glutSwapBuffers();
+
+   glutPostRedisplay();
 }
 
 /**
@@ -422,7 +480,32 @@ void teclado (unsigned char tecla, int x, int y){
   }
 }
 
+//Prueba3
+/*void teclas_esp (int tecla, int x, int y){
+  float k = 0.1;
 
+  switch(tecla){
+      case GLUT_KEY_UP:
+	elevacion -= k;
+	break;
+      case GLUT_KEY_LEFT:
+	azimut -= k;
+	break;
+      case GLUT_KEY_RIGHT:
+	azimut += k;
+
+	break;
+      case GLUT_KEY_DOWN:
+	elevacion += k;
+	break;
+
+  }
+   glutPostRedisplay();
+
+}
+*/
+
+//Para probar la camara
 /*
  * Recibe el input del usuario y mueve la nave
  */
@@ -441,7 +524,9 @@ void teclado_up (unsigned char tecla, int x, int y){
 		movement_pressed_y = 0;
 		break;
 	}
+  glutPostRedisplay();
 }
+//end
 
 int main (int argc, char** argv){
   init();
@@ -468,6 +553,10 @@ int main (int argc, char** argv){
   glutReshapeFunc(cambios_ventana);
   glutKeyboardFunc(teclado);
   glutKeyboardUpFunc(teclado_up);
+
+  //Prueba4
+  //  glutSpecialFunc(teclas_esp);
+
   glEnable(GL_DEPTH_TEST);
 
   glutMainLoop();
