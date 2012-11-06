@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <GL/glut.h>
+#include <string.h>
 #include "glm.h"
 
 #define INERTIA_DELTA 0.001 //Delta de velocidad en el cual se considera que un objeto se detuvo completamente
@@ -29,10 +30,17 @@ int movement_pressed_x = 0; //1. hay una tecla presionada que afecta el movimien
 int movement_pressed_y = 0; //1. hay una tecla presionada que afecta el movimiento en el eje y, 2.'1' es falso
 int movement_pressed_z = 0; //1. hay una tecla presionada que afecta el movimiento en el eje z, 2.'1' es falso
 GLuint texture; //textura de fondo
-
-
-float time = 0; //tiempo del juego en milisegundos
-figura objetos[15]; //arreglo con todos los objetos, no hay razon alguna para este tamano, se arreglara cuando sepamos el numero maximo de objetos
+int frames = 0;//conteo de frames
+int time_a = 0.0;
+int rate = 1;
+int rate_store = 0;
+char rate_str[10];
+int time_d = 0.0;
+float fps = 0.0;
+char *FPS[10];
+int puntos = 0;
+char puntaje[20];
+figura objetos[2]; //arreglo con todos los objetos, no hay razon alguna para este tamano, se arreglara cuando sepamos el numero maximo de objetos
 //objetos[0] : Nave
 //objetos[10] : bala
 
@@ -50,13 +58,27 @@ GLMmodel *modelo_ANILLO = NULL;
 
 
 
+void print_pantalla(int x, int y, char *string)
+{
+  glPushMatrix();
+ // glColor3f( 0, 1, 0 );
+  glRasterPos3f(x, y, objetos[0].pos.z);
+  int len, i;
+  len = (int) strlen(string);
+  for (i = 0; i < len; i++) {
+    glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]);
+  }
+  glPopMatrix();
+}
+
+
 
 /*
  * Esta funcion recibe una figura y calcula su posicion y velocidad respecto al tiempo
  */
 void movimiento(figura *fig){
 	//Si la figura sale del volumen de proyeccion no se calcula nada
-	if((*fig).pos.x-objetos[0].pos.x < -30){
+	if((*fig).pos.z-objetos[0].pos.z < -30){
 		(*fig).state = 0;
 		return;
 	}
@@ -110,9 +132,22 @@ void movimiento(figura *fig){
  * Esta funcion recibe una figura y calcula su posicion respecto al tiempo, considera que la figura puede ser movida por el usuario
  */
 void movimiento_nave(figura *fig){
-	//Si hay alguna tecla de movimiento presionada que afecte el movimiento en el eje y, se aplica una desaceleracion o
+	//Si hay alguna tecla de movimiento presionada que afecte el movimiento en el eje x, se aplica una desaceleracion o
 	//o se detiene completamente si el modulo de su velocidad  esta dentro del rango dado por INERTIA_DELTA
-        if(movement_pressed_y == 0){
+        if(movement_pressed_x == 0){
+                if((*fig).vel.x >= -INERTIA_DELTA && (*fig).vel.x <= INERTIA_DELTA){
+                        (*fig).acc.x = 0;
+                        (*fig).vel.x = 0;
+                }else if((*fig).vel.x > INERTIA_DELTA){
+                        (*fig).acc.x = -(*fig).inertia;
+                }else{
+                        (*fig).acc.x = (*fig).inertia;
+                }
+
+        }
+
+	//Equivalente para teclas que afecten el movimiento en el eje y
+	if(movement_pressed_y == 0){
                 if((*fig).vel.y >= -INERTIA_DELTA && (*fig).vel.y <= INERTIA_DELTA){
                         (*fig).acc.y = 0;
                         (*fig).vel.y = 0;
@@ -120,19 +155,6 @@ void movimiento_nave(figura *fig){
                         (*fig).acc.y = -(*fig).inertia;
                 }else{
                         (*fig).acc.y = (*fig).inertia;
-                }
-
-        }
-
-	//Equivalente para teclas que afecten el movimiento en el eje z
-	if(movement_pressed_z == 0){
-                if((*fig).vel.z >= -INERTIA_DELTA && (*fig).vel.z <= INERTIA_DELTA){
-                        (*fig).acc.z = 0;
-                        (*fig).vel.z = 0;
-                }else if((*fig).vel.z > INERTIA_DELTA){
-                        (*fig).acc.z = -(*fig).inertia;
-                }else{
-                        (*fig).acc.z = (*fig).inertia;
                 }
         }
 	movimiento(fig);
@@ -206,8 +228,8 @@ void dibujar_objetos(){
   glPushMatrix();
 	//Se dibuja la nave
   	glTranslatef(objetos[0].pos.x,objetos[0].pos.y,objetos[0].pos.z);
-  	glRotatef(-90.0,0,0,1);
-  	glRotatef(90.0,1,0,0); 
+  	glRotatef(-180.0,0,1,0);
+  //	glRotatef(90.0,1,0,0); 
   	glmUnitize(modelo_TURPIAL);
  	glmFacetNormals(modelo_TURPIAL);
   	glmVertexNormals(modelo_TURPIAL, 90.0);
@@ -215,11 +237,11 @@ void dibujar_objetos(){
   	glmDraw(modelo_TURPIAL, GLM_SMOOTH | GLM_MATERIAL);
   glPopMatrix();
   //Se sibujan los demas objetos
-  for (i =10 ; i < 15 ; i++){
+  for (i =1 ; i < 2 ; i++){
     if(objetos[i].state != 0){
       glPushMatrix();
       glTranslatef(objetos[i].pos.x,objetos[i].pos.y,objetos[i].pos.z);
-      dibujar_cubo(0.5,0.1,0.1);
+      dibujar_cubo(0.1,0.5,0.1);
       glPopMatrix();
     }
   }
@@ -275,13 +297,13 @@ GLuint loadBMP(char * imagepath){
 void drawBackground() {
 	glPushMatrix(); 
         	glEnable(GL_TEXTURE_2D);
-		float x = objetos[0].pos.x - 30.0; 
+		float z = objetos[0].pos.z - 30.0; 
         	glBegin( GL_QUADS ); 
-        	        glNormal3d(-1,0,0); 
-        	        glTexCoord2d(0.0f,0.0f); glVertex3d(x,-22.0,-14.5); 
-        	        glTexCoord2d(1.0f,0.0f); glVertex3d(x,22.0,-14.5); 
-        	        glTexCoord2d(1.0f,1.0f); glVertex3d(x,22.0,14.5); 
-        	        glTexCoord2d(0.0f,1.0f); glVertex3d(x,-22.0,14.5); 
+        	        glNormal3d(0,0,-1); 
+        	        glTexCoord2d(0.0f,0.0f); glVertex3d(-22.0,-14.5,z); 
+        	        glTexCoord2d(1.0f,0.0f); glVertex3d(22.0,-14.5,z); 
+        	        glTexCoord2d(1.0f,1.0f); glVertex3d(22.0,14.5,z); 
+        	        glTexCoord2d(0.0f,1.0f); glVertex3d(-22.0,14.5,z); 
         	glEnd(); 
         	glDisable(GL_TEXTURE_2D); 
         glPopMatrix();
@@ -306,7 +328,7 @@ void display(){
   movimiento_nave(&objetos[0]);
   //se calcula el movimiento de los demas objetos
   int i;
-  for (i = 0 ; i < 15 ; i++){
+  for (i = 1 ; i < 2 ; i++){
     figura * f = &objetos[i];
     if((*f).state == 1){
       movimiento(f);
@@ -319,16 +341,21 @@ void display(){
   glLightfv(GL_LIGHT0, GL_POSITION, lData4);
   GLfloat lData5[] = {1,0,0};
   //Camara
-  gluLookAt(objetos[0].pos.x+15.0, //Coordenada X
+  gluLookAt(0.0, //Coordenada X
 	    0.0, //Coordenada Y
-	    0.0, //Coordenada Z
-	    objetos[0].pos.x, 0.0, 0.0, //Posicion Inicial Camara
-	    0.0, 0.0, 1.0 //Vector UP En este caso, Z
+	    objetos[0].pos.z+15.0, //Coordenada Z
+	    0.0, 0.0, objetos[0].pos.z, //Posicion Inicial Camara
+	    0.0, 1, 0.0 //Vector UP En este caso, Z
 	    );
   glDisable(GL_LIGHTING);
   drawBackground();
   glEnable(GL_LIGHTING);
   dibujar_objetos();
+  sprintf(rate_str,"Rate : %d",rate);
+  print_pantalla(0,4,rate_str); 
+  print_pantalla(-7,-4,FPS);//Se imprime el FPS
+  sprintf(puntaje,"Puntos: %d",puntos);
+  print_pantalla(4,-4,puntaje);//Se imprime el puntaje
   glutSwapBuffers();
 }
 
@@ -367,24 +394,39 @@ void teclado (unsigned char tecla, int x, int y){
      case 27:
        exit(0);
      case 'w':
-	movement_pressed_z = 1;
-       objetos[0].acc.z = acc;
-       break;
-     case 'a':
-       //izquierda: 
-	movement_pressed_y = 1;
-       objetos[0].acc.y = -acc;
-       break;
-     case 's':
-	//abajo:
-	movement_pressed_z = 1;
-       objetos[0].acc.z = -acc;
-       break;
-     case 'd':
-	//derecha:
 	movement_pressed_y = 1;
        objetos[0].acc.y = acc;
        break;
+     case 'a':
+       //izquierda: 
+	movement_pressed_x = 1;
+       objetos[0].acc.x = -acc;
+       break;
+     case 's':
+	//abajo:
+	movement_pressed_y = 1;
+       objetos[0].acc.y = -acc;
+       break;
+     case 'd':
+	//derecha:
+	movement_pressed_x = 1;
+       objetos[0].acc.x = acc;
+       break;
+     case 'p':
+       if (rate == 0){
+         rate = rate_store;
+       }else{
+         rate_store = rate;
+         rate = 0;
+       }
+       break;
+     case '+':
+       rate *= 2;
+       break;
+     case '-':
+       if(rate > 1){
+         rate /= 2;
+       }
   }
 }
 
@@ -395,16 +437,16 @@ void teclado (unsigned char tecla, int x, int y){
 void teclado_up (unsigned char tecla, int x, int y){
   switch(tecla){
 	case 'a':
-		movement_pressed_y = 0;
+		movement_pressed_x = 0;
 		break;
 	case 's':
-		movement_pressed_z = 0;
+		movement_pressed_y = 0;
 		break;
 	case 'w':
-		movement_pressed_z = 0;
+		movement_pressed_y = 0;
 		break;
 	case 'd':
-		movement_pressed_y = 0;
+		movement_pressed_x = 0;
 		break;
 	}
 }
@@ -424,9 +466,9 @@ void init(){
         objetos[0].acc.y = 0;
         objetos[0].acc.z = 0;
         //velocidad
-        objetos[0].vel.x = -2.0;
+        objetos[0].vel.x = 0;
         objetos[0].vel.y = 0;
-        objetos[0].vel.z = 0;
+        objetos[0].vel.z = -2.0;
         //estado
         objetos[0].state = 1;
         //limite de velocidad
@@ -440,25 +482,25 @@ void init(){
 
 	//objetos[10] = proyectil;
         //posicion
-        objetos[10].pos.x = 0;
-        objetos[10].pos.y = 0;
-        objetos[10].pos.z = 0;
+        objetos[1].pos.x = 0;
+        objetos[1].pos.y = 0;
+        objetos[1].pos.z = 0;
         //aceleracion
-        objetos[10].acc.x = 0;
-        objetos[10].acc.y = 0;
-        objetos[10].acc.z = 0;
+        objetos[1].acc.x = 0;
+        objetos[1].acc.y = 0;
+        objetos[1].acc.z = 0;
         //velocidad
-        objetos[10].vel.x = -30.0;
-        objetos[10].vel.y = 0;
-        objetos[10].vel.z = 0;
+        objetos[1].vel.x = 0;
+        objetos[1].vel.y = 0;
+        objetos[1].vel.z = -30.0;
         //estado
-        objetos[10].state = 0;
+        objetos[1].state = 0;
         //limite de velocidad
-        objetos[10].maxVel = 30.0;
+        objetos[1].maxVel = 30.0;
 	//parametro inertia
-        objetos[0].inertia = 1.0;
+        objetos[1].inertia = 1.0;
 	//parametro engineAcc
-        objetos[0].engineAcc = 2.0;
+        objetos[1].engineAcc = 2.0;
 
 
 	
@@ -475,12 +517,36 @@ void init(){
 GLvoid mouse_action(GLint button, GLint state, GLint x, GLint y){
         switch(button){
                 case GLUT_LEFT_BUTTON:
-			if(objetos[10].state != 1){
-                        	objetos[10].state = 1;
-				objetos[10].pos = objetos[0].pos;
+			if(objetos[1].state != 1){
+                        	objetos[1].state = 1;
+				objetos[1].pos = objetos[0].pos;
 			}
 			 break;
         }
+}
+
+
+void calcular_fps(){
+	frames++;
+	time_d = glutGet(GLUT_ELAPSED_TIME);
+	int nTime = time_d - time_a;
+	if(nTime > 1000){
+		fps = frames / (nTime / 1000.0f);
+		sprintf(FPS,"%f FPS",fps);
+		time_a = time_d;
+		frames = 0;
+	} 	
+
+}
+
+
+
+
+/*
+ * Funcion que se ejecuta cuando la aplicacion esta idle
+ */
+void idle(){
+	calcular_fps();
 }
 
 
@@ -518,6 +584,7 @@ int main (int argc, char** argv){
   glutKeyboardFunc(teclado);
   glutKeyboardUpFunc(teclado_up);
   glutMouseFunc(mouse_action);
+  glutIdleFunc(idle);
   glEnable(GL_DEPTH_TEST);
   init();
   glutMainLoop();
