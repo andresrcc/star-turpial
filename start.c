@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <GL/glut.h>
+#include <GL/glu.h>
+#include <GL/gl.h>
 #include <string.h>
 #include "glm.h"
+#include <math.h>
 
 #define INERTIA_DELTA 0.001 //Delta de velocidad en el cual se considera que un objeto se detuvo completamente
 
@@ -40,7 +43,9 @@ float fps = 0.0;
 char FPS[50];
 int puntos = 0;
 char puntaje[20];
-figura objetos[2]; //arreglo con todos los objetos, no hay razon alguna para este tamano, se arreglara cuando sepamos el numero maximo de objetos
+figura objetos[3]; //arreglo con todos los objetos, no hay razon alguna para este tamano, se arreglara cuando sepamos el numero maximo de objetos
+figura blancos[5];
+figura anillos[5];
 //objetos[0] : Nave
 //objetos[10] : bala
 
@@ -56,6 +61,9 @@ GLMmodel *modelo_TURPIAL = NULL;
 GLMmodel *modelo_BLANCO = NULL;
 GLMmodel *modelo_ANILLO = NULL;
 
+//Para guardar objetos quadratic. Estos sirven para
+//crear los anillos y blancos con funciones de la libreria GLU
+GLUquadricObj *quadratic;
 
 
 void print_pantalla(float x, float y, char *string)
@@ -78,9 +86,12 @@ void print_pantalla(float x, float y, char *string)
  */
 void movimiento(figura *fig){
 	//Si la figura sale del volumen de proyeccion no se calcula nada
-	if((*fig).pos.z-objetos[0].pos.z < -30){
+	float guard = (*fig).pos.z-objetos[0].pos.z;
+	if(guard < -30 || guard > 0){
 		(*fig).state = 0;
 		return;
+	}else{
+		(*fig).state = 1;
 	}
 	//Se calcula nTime, el tiempo que ha pasado desde la ultima llamada a esta funcion con este parametro fig
 	float nTime = 0-(*fig).time;
@@ -173,9 +184,18 @@ void movimiento_nave(figura *fig){
 }
 
 
+void dibujar_blanco(float x, float y, float z){
+  glPushMatrix();
+  //glClear(GL_COLOR_BUFFER_BIT);
+  //glLoadIdentity();
+  glTranslatef(x,y,z);
+  //glColor3f(0.2,0.1,0.4);
+  //gluDisk(quadratic,0.5,3.5,32,32);
+  glutSolidTorus(0.05,0.5,20,20);
+  glPopMatrix();
 
-
-
+  //glFlush();
+}
 
 
 
@@ -231,7 +251,6 @@ void dibujar_cubo(GLfloat anch, GLfloat alt, GLfloat prof){
 	glEnd();
 }
 
-
 /*
  * Funcion que dibuja a todos los objetos que se veran en la escena
  */
@@ -248,7 +267,7 @@ void dibujar_objetos(){
   	glEnable(GL_COLOR_MATERIAL);
   	glmDraw(modelo_TURPIAL, GLM_SMOOTH | GLM_MATERIAL);
   glPopMatrix();
-  //Se sibujan los demas objetos
+  //Se sibujan los lasers
   for (i =1 ; i < 2 ; i++){
     if(objetos[i].state != 0){
       glPushMatrix();
@@ -266,6 +285,13 @@ void dibujar_objetos(){
       glPopMatrix();
     }
   }
+  //se dibujan los toros
+   for (i = 0 ; i<5 ; i++){
+    if(anillos[i].state != 0){
+    dibujar_blanco(anillos[i].pos.x,anillos[i].pos.y,anillos[i].pos.z);  
+     }
+   }
+
   //se le indica a glut que la escena debe ser redibujada
   glutPostRedisplay();
 }
@@ -346,16 +372,15 @@ void display(){
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
   //se calcula el movimiento de la nave
-  movimiento_nave(&objetos[0]);
-  //se calcula el movimiento de los demas objetos
+    //se calcula el movimiento de los demas objetos
   int i;
-  for (i = 1 ; i < 2 ; i++){
-    figura * f = &objetos[i];
-    if((*f).state == 1){
-      movimiento(f);
-    }
+  for (i = 0 ; i < 5 ; i++){
+      movimiento(&anillos[i]);
+      movimiento(&blancos[i]);
   }
+  movimiento_nave(&objetos[0]);
 
+  movimiento(&objetos[1]);
   glClearColor(0.0,0.0,0.0,0.0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   GLfloat lData4[] = {-1,1,0,0.0};
@@ -511,7 +536,7 @@ void init(){
         //velocidad
         objetos[1].vel.x = 0;
         objetos[1].vel.y = 0;
-        objetos[1].vel.z = -30.0;
+        objetos[1].vel.z = -35.0;
         //estado
         objetos[1].state = 0;
         //limite de velocidad
@@ -522,7 +547,29 @@ void init(){
         objetos[1].engineAcc = 2.0;
 
 
-	
+	//objetos[2] = toro;
+        //posicion
+        anillos[0].pos.x = 0;
+        anillos[0].pos.y = 0;
+        anillos[0].pos.z = -35.0;
+        //aceleracion
+        anillos[0].acc.x = 0;
+        anillos[0].acc.y = 0;
+        anillos[0].acc.z = 0;
+        //velocidad
+        anillos[0].vel.x = 0;
+        anillos[0].vel.y = 0;
+        anillos[0].vel.z = 0.0;
+        //estado
+        anillos[0].state = 0;
+        //limite de velocidad
+        anillos[0].maxVel = 0.0;
+	//parametro inertia
+        anillos[0].inertia = 0.0;
+	//parametro engineAcc
+        anillos[0].engineAcc = 0.0;
+
+
 
 
 
@@ -538,6 +585,7 @@ GLvoid mouse_action(GLint button, GLint state, GLint x, GLint y){
                 case GLUT_LEFT_BUTTON:
 			if(objetos[1].state != 1){
       				objetos[1].pos = objetos[0].pos;
+				objetos[1].pos.z -= 1;
 				objetos[1].state = 1;
 			}
 			 break;
