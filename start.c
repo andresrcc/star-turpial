@@ -17,10 +17,11 @@ struct vector{
 
 //registro que representa a un objeto
 struct objeto{
+	float time; //tiempo que ha pasado desde la ultima actualizacion
         int state; //estado del objeto: 1. visible, 2.no-visible
         float maxVel; //velocidad maxima que puede tener el objeto
         float inertia; //modulo de aceleracion con que se desacelera el objeto al no verse afectado por fuerzas externas
-        float engineAcc; //aceleracio que proporcionada por un motor
+        float engineAcc; //aceleracio que es proporcionada por un motor
         vector3D pos; //vector posicion
         vector3D vel; //vector velocidad
         vector3D acc; //vectos aceleracion
@@ -30,20 +31,13 @@ struct objeto{
 int movement_pressed_x = 0; //1. hay una tecla presionada que afecta el movimiento en el eje x, 2.'1' es falso
 int movement_pressed_y = 0; //1. hay una tecla presionada que afecta el movimiento en el eje y, 2.'1' es falso
 int movement_pressed_z = 0; //1. hay una tecla presionada que afecta el movimiento en el eje z, 2.'1' es falso
+GLuint texture; //textura de fondo
 
 
 float time = 0; //tiempo del juego en milisegundos
-figura objetos[2]; //arreglo con todos los objetos
-
-/*
-//Prueba1
-//Para probar la existencia de las figuras
-//Coordeadas de la Camara
-float azimut = 0.78; 
-float elevacion = 0.78;
-float distancia = 50.0;
-//END
-*/
+figura objetos[15]; //arreglo con todos los objetos, no hay razon alguna para este tamano, se arreglara cuando sepamos el numero maximo de objetos
+//objetos[0] : Nave
+//objetos[10] : bala
 
 
 /**
@@ -54,6 +48,8 @@ float distancia = 50.0;
  */
 
 GLMmodel *modelo_TURPIAL = NULL;
+GLMmodel *modelo_BLANCO = NULL;
+GLMmodel *modelo_ANILLO = NULL;
 
 //Para guardar objetos quadratic. Estos sirven para
 //crear los anillos y blancos con funciones de la libreria GLU
@@ -61,64 +57,25 @@ GLUquadricObj *quadratic;
 
 
 
-//Nave
-//figura nave;
-
-
 /*
- * Se realizan las inicializaciones pertinente para poder ejecutar el juego
- */
-void init(){
-	//objetos[0] = nave;
-        //posicion
-        objetos[0].pos.x = 0;
-        objetos[0].pos.y = 0;
-        objetos[0].pos.z = 0;
-        //aceleracion
-        objetos[0].acc.x = 0;
-        objetos[0].acc.y = 0;
-        objetos[0].acc.z = 0;
-        //velocidad
-        objetos[0].vel.x = 0;
-        objetos[0].vel.y = 0;
-        objetos[0].vel.z = 0;
-        //estado
-        objetos[0].state = 1;
-        //limite de velocidad
-        objetos[0].maxVel = 2.0;
-	//parametro inertia
-        objetos[0].inertia = 1.0;
-	//parametro engineAcc
-        objetos[0].engineAcc = 2.0;
-
-	//Crea apuntador a objeto quadric
-	//Crea smooth normals y coordenadas 
-	//de textura
-	quadratic = gluNewQuadric();
-	gluQuadricNormals(quadratic, GLU_SMOOTH);
-	gluQuadricTexture(quadratic, GL_TRUE);
-
-	//Posicion de un Blanco
-	objetos[1].pos.x = 0;
-        objetos[1].pos.y = 0;
-        objetos[1].pos.z = 0;
-
-}
-
-/*
- * Esta funcion recibe una figura y calcula su posicion respecto al tiempo
+ * Esta funcion recibe una figura y calcula su posicion y velocidad respecto al tiempo
  */
 void movimiento(figura *fig){
-        float nTime = 0-time;
-        time = glutGet(GLUT_ELAPSED_TIME)*0.001;
-        nTime += time;
+	//Si la figura sale del volumen de proyeccion no se calcula nada
+	if((*fig).pos.x-objetos[0].pos.x < -30){
+		(*fig).state = 0;
+		return;
+	}
+	//Se calcula nTime, el tiempo que ha pasado desde la ultima llamada a esta funcion con este parametro fig
+	float nTime = 0-(*fig).time;
+	(*fig).time = glutGet(GLUT_ELAPSED_TIME)*0.001;
+        nTime += (*fig).time;
 
         //se calcula el cambio de velocidad debido a la aceleracion
         //para cada caso si la velocidad es menor que el maximo permitido se recalcula,
         //de lo contrario se usa la velocidad maxima.
 
         //velocidad en x
-	        
         if((*fig).vel.x <= (*fig).maxVel && (*fig).vel.x >= -(*fig).maxVel){
                 (*fig).vel.x += (*fig).acc.x*nTime;
         }else if((*fig).vel.x > (*fig).maxVel){
@@ -146,17 +103,12 @@ void movimiento(figura *fig){
 	}
 
 
-       // printf("VELOCIDAD\nx: %f\ny: %f\nz: %f\n\n",(*fig).vel.x,(*fig).vel.y,(*fig).vel.z);
 
         //se calcula el cambio en la posicion debido a la velocidad
         (*fig).pos.x += (*fig).vel.x*nTime;
         (*fig).pos.y += (*fig).vel.y*nTime;
         (*fig).pos.z += (*fig).vel.z*nTime;
 
-        //printf("ACELERACION\nx: %f\ny: %f\nz: %f\n\n",(*fig).acc.x,(*fig).acc.y,(*fig).acc.z);
-
-
-        //printf("POSICION\nx: %f\ny: %f\nz: %f\n\nnTime: %f\n\n",(*fig).pos.x,(*fig).pos.y,(*fig).pos.z,nTime);
 }
 
 
@@ -164,19 +116,8 @@ void movimiento(figura *fig){
  * Esta funcion recibe una figura y calcula su posicion respecto al tiempo, considera que la figura puede ser movida por el usuario
  */
 void movimiento_nave(figura *fig){
-
-        if(movement_pressed_x == 0){
-                if((*fig).vel.x >= -INERTIA_DELTA && (*fig).vel.x <= INERTIA_DELTA){
-                        (*fig).acc.x = 0;
-                        (*fig).vel.x = 0;
-                }else if((*fig).vel.x > INERTIA_DELTA){
-                        (*fig).acc.x = -(*fig).inertia;
-                }else{
-                        (*fig).acc.x = (*fig).inertia;
-                }
-
-        }
-
+	//Si hay alguna tecla de movimiento presionada que afecte el movimiento en el eje y, se aplica una desaceleracion o
+	//o se detiene completamente si el modulo de su velocidad  esta dentro del rango dado por INERTIA_DELTA
         if(movement_pressed_y == 0){
                 if((*fig).vel.y >= -INERTIA_DELTA && (*fig).vel.y <= INERTIA_DELTA){
                         (*fig).acc.y = 0;
@@ -189,6 +130,7 @@ void movimiento_nave(figura *fig){
 
         }
 
+	//Equivalente para teclas que afecten el movimiento en el eje z
 	if(movement_pressed_z == 0){
                 if((*fig).vel.z >= -INERTIA_DELTA && (*fig).vel.z <= INERTIA_DELTA){
                         (*fig).acc.z = 0;
@@ -221,207 +163,187 @@ void dibujar_blanco(float x, float y, float z){
 /*
  * un cubo con la anchura, altura y profundidad dados
  */
-void dibujar_cubo(GLfloat a, GLfloat b, GLfloat c, GLfloat anch, GLfloat alt, GLfloat prof){
+void dibujar_cubo(GLfloat anch, GLfloat alt, GLfloat prof){
 
 	anch = anch/2;
 	alt = alt/2;
 	prof = prof/2;
-	//glEnable(GL_TEXTURE_2D);
 	glBegin(GL_QUADS);
 		glNormal3f(0.0f,1.0f,0.0f);
-		//glTexCoord2f(0.0f,1.0f);
 		glVertex3f(anch,prof,alt);
-		//glTexCoord2f(0.0f,0.0f);
 		glVertex3f(anch,prof,-alt);
-		//glTexCoord2f(1.0f,0.0f);
 		glVertex3f(-anch,prof,-alt);
-		//glTexCoord2f(1.0f,1.0f);
 		glVertex3f(-anch,prof,alt);
 	glEnd();
 	glBegin(GL_QUADS);
 		glNormal3f(1.0f,0.0f,0.0f);
-		//glTexCoord2f(1.0f,1.0f);
 		glVertex3f(anch,prof,alt);
-		//glTexCoord2f(1.0f,0.0f);
 		glVertex3f(anch,prof,-alt);
-		//glTexCoord2f(0.0f,0.0f);
 		glVertex3f(anch,-prof,-alt);
-		//glTexCoord2f(0.0f,1.0f);
 		glVertex3f(anch,-prof,alt);
 	glEnd();
 	glBegin(GL_QUADS);
 		glNormal3f(0.0f,-1.0f,0.0f);
-		//glTexCoord2f(1.0f,1.0f);
 		glVertex3f(anch,-prof,alt);
-		//glTexCoord2f(1.0f,0.0f);
 		glVertex3f(anch,-prof,-alt);
-		//glTexCoord2f(0.0f,0.0f);
 		glVertex3f(-anch,-prof,-alt);
-		//glTexCoord2f(0.0f,1.0f);
 		glVertex3f(-anch,-prof,alt);
 	glEnd();
 	glBegin(GL_QUADS);
 		glNormal3f(-1.0f,0.0f,0.0f);
-		//glTexCoord2f(1.0f,1.0f);
 		glVertex3f(-anch,-prof,alt);
-		//glTexCoord2f(1.0f,0.0f);
 		glVertex3f(-anch,-prof,-alt);
-		//glTexCoord2f(0.0f,0.0f);
 		glVertex3f(-anch,prof,-alt);
-		//glTexCoord2f(0.0f,1.0f);
 		glVertex3f(-anch,prof,alt);
 	glEnd(); 
 	glBegin(GL_QUADS);
 		glNormal3f(0.0f,0.0f,1.0f);
-		//glTexCoord2f(0.0f,1.0f);
 		glVertex3f(-anch,prof,alt);
-		//glTexCoord2f(0.0f,0.0f);
 		glVertex3f(-anch,-prof,alt);
-		//glTexCoord2f(1.0f,0.0f);
 		glVertex3f(anch,-prof,alt);
-		//glTexCoord2f(1.0f,1.0f);
 		glVertex3f(anch,prof,alt);
 	glEnd();
 	glBegin(GL_QUADS);
 		glNormal3f(0.0f,0.0f,-1.0f);
-		//glTexCoord2f(0.0f,0.0f);
 		glVertex3f(-anch,prof,-alt);
-		//glTexCoord2f(1.0f,0.0f);
 		glVertex3f(anch,prof,-alt);
-		//glTexCoord2f(1.0f,1.0f);
 		glVertex3f(anch,-prof,-alt);
-		//glTexCoord2f(0.0f,1.0f);
 		glVertex3f(-anch,-prof,-alt);
 	glEnd();
-
-	//glDisable(GL_TEXTURE_2D);
 }
 
 /*
- * Dibuja al objeto creado por nosotros (Joe)
+ * Funcion que dibuja a todos los objetos que se veran en la escena
  */
-void dibujar_Joe(){
-
-  //in vec2 UV;
-
-  
-  //Matriz mayor
-  glPushMatrix();
-  	//trasladar todo el objeto
-  	//Submatrices del objeto
-  	//Cabeza
-  	glColor3f(0.93f,0.82f,0.81f);
-  	glPushMatrix();
- 		 glTranslatef(0,0.75,0);
- 		 dibujar_cubo(0.0,0.0,0.0,0.5,0.5,0.5);
- 	 glPopMatrix();
- 	 //torso
- 	 //glColor3f(1.0,0,1.0);		
- 	 glPushMatrix();	
- 		 glTranslatef(0,0,0);
- 		 dibujar_cubo(0.0,0.0,0.0,0.3,0.15,1);
- 	 glPopMatrix();
- 	 //BrazoI
- 	 //glColor3f(1.0,1.0,0);		
- 	 glPushMatrix();	
- 		 glTranslatef(0.35,0.2,-0.15);
- 	 	 glRotatef(45.0,0,1.0,0);
- 		 dibujar_cubo(0.0,0.0,0.0,0.45,0.1,0.1);
- 	 glPopMatrix();
- 	 //BrazoD
- 	 //glColor3f(1.0,1.0,0);		
- 	 glPushMatrix();	
- 		 glTranslatef(-0.35,0.2,-0.15);
-		 glRotatef(-45.0,0,1.0,0);
-	 	 dibujar_cubo(0.0,0.0,0.0,0.45,0.1,0.1);
-	  glPopMatrix();
-	  //PiernaI
-	 //glColor3f(0,1.0,1.0);		
-	  glPushMatrix();	
-	 	 glTranslatef(0.15,-0.5,0);
-	 	 dibujar_cubo(0.0,0.0,0.0,0.1,0.1,0.5);
-	  glPopMatrix();
-	  //PiernaD
-	 //glColor3f(0,1.0,1.0);		
-	  glPushMatrix();	
-	 	 glTranslatef(-0.15,-0.5,0);
-	 	 dibujar_cubo(0.0,0.0,0.0,0.1,0.1,0.5);
-	  glPopMatrix();
-	
-  glPopMatrix();
-	
-}
-
-
-void dibujar_nave(){
-
- movimiento_nave(&objetos[0]);
-  //nave
-  glEnable(GL_LIGHTING);
-
-  //Dibujar nave
-  glPushMatrix();
-  glTranslatef(objetos[0].pos.x,objetos[0].pos.y,objetos[0].pos.z);
-  glRotatef(-90.0,0,0,1);
-  glRotatef(90.0,1,0,0); 
-  //printf("%f-%f-%f\n",objetos[0].pos.x,objetos[0].pos.y,objetos[0].pos.z);
-  glmUnitize(modelo_TURPIAL);
-  glmFacetNormals(modelo_TURPIAL);
-  glmVertexNormals(modelo_TURPIAL, 90.0);
-  glEnable(GL_COLOR_MATERIAL);
-  glmDraw(modelo_TURPIAL, GLM_SMOOTH | GLM_MATERIAL);
-  glPopMatrix();
-
-}
-
 void dibujar_objetos(){
-
-  dibujar_nave();
-  dibujar_blanco(objetos[1].pos.x,objetos[1].pos.y, objetos[1].pos.z); 
+  int i = 0;
+  glPushMatrix();
+	//Se dibuja la nave
+  	glTranslatef(objetos[0].pos.x,objetos[0].pos.y,objetos[0].pos.z);
+  	glRotatef(-90.0,0,0,1);
+  	glRotatef(90.0,1,0,0); 
+  	glmUnitize(modelo_TURPIAL);
+ 	glmFacetNormals(modelo_TURPIAL);
+  	glmVertexNormals(modelo_TURPIAL, 90.0);
+  	glEnable(GL_COLOR_MATERIAL);
+  	glmDraw(modelo_TURPIAL, GLM_SMOOTH | GLM_MATERIAL);
+  glPopMatrix();
+  //Se sibujan los demas objetos
+  for (i =10 ; i < 15 ; i++){
+    if(objetos[i].state != 0){
+      glPushMatrix();
+      glTranslatef(objetos[i].pos.x,objetos[i].pos.y,objetos[i].pos.z);
+      dibujar_cubo(0.5,0.1,0.1);
+      glPopMatrix();
+    }
+  }
+  //se le indica a glut que la escena debe ser redibujada
+  glutPostRedisplay();
 }
 
 
+/*
+ * Funcion que nos permite cargar en memoria una textura a partir de un archivo en formato BMP
+ */
+GLuint loadBMP(char * imagepath){
+        unsigned char header[54];
+        unsigned int dataPos;
+        unsigned int width, height;
+        unsigned int imageSize;
+        unsigned char * data;
+        FILE * file = fopen(imagepath, "rb");
+        if (fread(header,1,54,file)!=54){
+//              return false;
+        }
+        if (header[0]!='B' || header[1]!='M'){
+//              return 0;
+        }
+        dataPos = *(int*)&(header[0x0A]);
+        imageSize = *(int*)&(header[0x22]);
+        width = *(int*)&(header[0x12]);
+        height = *(int*)&(header[0x16]);
+        if(imageSize==0){
+                imageSize = width*height*3;
+        }
+        if(dataPos == 0){
+                dataPos = 54;
+        }
+        data = (unsigned char*)malloc(imageSize*sizeof(unsigned char));
+        fread(data,1,imageSize,file);
+        fclose(file);
+        GLuint textureID;
+        glGenTextures(1,&textureID);
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,width,height,0,GL_BGR_EXT,GL_UNSIGNED_BYTE,data);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	return textureID;
+}
+
+
+/*
+ * Funcion que dibuja el fondo
+ */
+void drawBackground() {
+	glPushMatrix(); 
+        	glEnable(GL_TEXTURE_2D);
+		float x = objetos[0].pos.x - 30.0; 
+        	glBegin( GL_QUADS ); 
+        	        glNormal3d(-1,0,0); 
+        	        glTexCoord2d(0.0f,0.0f); glVertex3d(x,-22.0,-14.5); 
+        	        glTexCoord2d(1.0f,0.0f); glVertex3d(x,22.0,-14.5); 
+        	        glTexCoord2d(1.0f,1.0f); glVertex3d(x,22.0,14.5); 
+        	        glTexCoord2d(0.0f,1.0f); glVertex3d(x,-22.0,14.5); 
+        	glEnd(); 
+        	glDisable(GL_TEXTURE_2D); 
+        glPopMatrix();
+
+
+
+	}
 
 
 
 
 
+
+
+/*
+ * Funcion display de glut que dibuja de nuevo la escena
+ */
 void display(){
-  movimiento(&objetos[0]);
-  //Carga matriz modelo vista.
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
+  //se calcula el movimiento de la nave
+  movimiento_nave(&objetos[0]);
+  //se calcula el movimiento de los demas objetos
+  int i;
+  for (i = 0 ; i < 15 ; i++){
+    figura * f = &objetos[i];
+    if((*f).state == 1){
+      movimiento(f);
+    }
+  }
 
   glClearColor(0.0,0.0,0.0,0.0);
-
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+  GLfloat lData4[] = {-1,1,0,0.0};
+  glLightfv(GL_LIGHT0, GL_POSITION, lData4);
+  GLfloat lData5[] = {1,0,0};
   //Camara
-
-    gluLookAt(15.0, //Coordenada X
+  gluLookAt(objetos[0].pos.x+15.0, //Coordenada X
 	    0.0, //Coordenada Y
 	    0.0, //Coordenada Z
-	    0.0, 0.0, 0.0, //Posicion Inicial Camara
+	    objetos[0].pos.x, 0.0, 0.0, //Posicion Inicial Camara
 	    0.0, 0.0, 1.0 //Vector UP En este caso, Z
 	    );
-  
-
-  //Prueba2
-  /*   gluLookAt(distancia * sin(elevacion) * sin(azimut),
-	   distancia * cos(elevacion),
-           distancia * sin(elevacion) * cos(azimut),
-	   0.0,0.0,0.0,
-           0.0,1.0,0.0);
-   //End
-   */
-
-  //Hay que ver como los dibujamos que vengan hacia la nave
+  glDisable(GL_LIGHTING);
+  drawBackground();
+  glEnable(GL_LIGHTING);
   dibujar_objetos();
-
-  //  glFlush();
-   glutSwapBuffers();
-
-   glutPostRedisplay();
+  glutSwapBuffers();
 }
 
 /**
@@ -480,32 +402,7 @@ void teclado (unsigned char tecla, int x, int y){
   }
 }
 
-//Prueba3
-/*void teclas_esp (int tecla, int x, int y){
-  float k = 0.1;
 
-  switch(tecla){
-      case GLUT_KEY_UP:
-	elevacion -= k;
-	break;
-      case GLUT_KEY_LEFT:
-	azimut -= k;
-	break;
-      case GLUT_KEY_RIGHT:
-	azimut += k;
-
-	break;
-      case GLUT_KEY_DOWN:
-	elevacion += k;
-	break;
-
-  }
-   glutPostRedisplay();
-
-}
-*/
-
-//Para probar la camara
 /*
  * Recibe el input del usuario y mueve la nave
  */
@@ -524,13 +421,87 @@ void teclado_up (unsigned char tecla, int x, int y){
 		movement_pressed_y = 0;
 		break;
 	}
-  glutPostRedisplay();
 }
-//end
+
+
+/*
+ * Se realizan las inicializaciones pertinente para poder ejecutar el juego
+ */
+void init(){
+	//objetos[0] = nave;
+        //posicion
+        objetos[0].pos.x = 0;
+        objetos[0].pos.y = 0;
+        objetos[0].pos.z = 0;
+        //aceleracion
+        objetos[0].acc.x = 0;
+        objetos[0].acc.y = 0;
+        objetos[0].acc.z = 0;
+        //velocidad
+        objetos[0].vel.x = -2.0;
+        objetos[0].vel.y = 0;
+        objetos[0].vel.z = 0;
+        //estado
+        objetos[0].state = 1;
+        //limite de velocidad
+        objetos[0].maxVel = 2.0;
+	//parametro inertia
+        objetos[0].inertia = 1.0;
+	//parametro engineAcc
+        objetos[0].engineAcc = 2.0;
+
+
+
+	//objetos[10] = proyectil;
+        //posicion
+        objetos[10].pos.x = 0;
+        objetos[10].pos.y = 0;
+        objetos[10].pos.z = 0;
+        //aceleracion
+        objetos[10].acc.x = 0;
+        objetos[10].acc.y = 0;
+        objetos[10].acc.z = 0;
+        //velocidad
+        objetos[10].vel.x = -30.0;
+        objetos[10].vel.y = 0;
+        objetos[10].vel.z = 0;
+        //estado
+        objetos[10].state = 0;
+        //limite de velocidad
+        objetos[10].maxVel = 30.0;
+	//parametro inertia
+        objetos[0].inertia = 1.0;
+	//parametro engineAcc
+        objetos[0].engineAcc = 2.0;
+
+
+	
+
+
+
+	texture = loadBMP("stars.bmp");
+	glBindTexture( GL_TEXTURE_2D, texture );
+}
+
+/*
+ * Funcion que maneja los clicks en el mouse
+ */
+GLvoid mouse_action(GLint button, GLint state, GLint x, GLint y){
+        switch(button){
+                case GLUT_LEFT_BUTTON:
+			if(objetos[10].state != 1){
+                        	objetos[10].state = 1;
+				objetos[10].pos = objetos[0].pos;
+			}
+			 break;
+        }
+}
+
+
 
 int main (int argc, char** argv){
-  init();
-  static const GLfloat ambient[4] = {1.0f,1.0f,1.0f,1.0f};
+  
+  GLfloat lData0[] = {1,1,100,0.0f};
 
   //Inicializamos la ventana
   glutInit(&argc,argv);
@@ -539,10 +510,17 @@ int main (int argc, char** argv){
   glutCreateWindow("Star Turpial");
  
   glShadeModel(GL_SMOOTH);
-  glLightfv(GL_LIGHT0,GL_AMBIENT,ambient);
+  glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
+  GLfloat lData1[] = {0.05, 0.05, 0.05,1.0f};
+  glLightfv(GL_LIGHT0, GL_POSITION, lData0);
+  glLightfv(GL_LIGHT0,GL_AMBIENT,lData1);
+  GLfloat lData2[] = {1,1,1,1};
+  glLightfv(GL_LIGHT0,GL_DIFFUSE,lData2);
+  GLfloat lData3[] = {1,1,1,1};
+  glLightfv(GL_LIGHT0,GL_SPECULAR,lData3);
 
- 
+
   //Podemos convertir esto en una funcion 
   //posicion objeto una vez que tengamos los objetos
 
@@ -553,12 +531,9 @@ int main (int argc, char** argv){
   glutReshapeFunc(cambios_ventana);
   glutKeyboardFunc(teclado);
   glutKeyboardUpFunc(teclado_up);
-
-  //Prueba4
-  //  glutSpecialFunc(teclas_esp);
-
+  glutMouseFunc(mouse_action);
   glEnable(GL_DEPTH_TEST);
-
+  init();
   glutMainLoop();
 
   return 0;
