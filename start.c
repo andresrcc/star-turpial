@@ -8,6 +8,8 @@
 #include <math.h>
 
 #define INERTIA_DELTA 0.005 //Delta de velocidad en el cual se considera que un objeto se detuvo completamente
+#define TORUS_RADIO 0.25
+#define BLANCO_RADIO 0.2
 
 //registro que representa un vector de 3 dimensiones
 struct vector{
@@ -18,6 +20,7 @@ struct vector{
 
 //registro que representa a un objeto
 struct objeto{
+	int through;
 	float time; //tiempo que ha pasado desde la ultima actualizacion
         int state; //estado del objeto: 1. visible, 2.no-visible
         float maxVel; //velocidad maxima que puede tener el objeto
@@ -58,7 +61,7 @@ GLfloat red[] = {1.0f,0.0f,0.0f,1.0f};
 GLfloat black[] = {0.0f,0.0f,0.0f,1.0f};
 GLfloat white[] = {1.0f,1.0f,1.0f,1.0f};
 GLfloat diffuse[] = {0.8f,0.8f,0.8f,1.0f};
-
+GLfloat blue[] = {0.0f,0.0f,1.0f,1.0f};
 
 
 /**
@@ -105,6 +108,44 @@ void screen_time(figura *fig){
 		(*fig).state = 0;
 	}else{
 		(*fig).state = 1;
+	}
+}
+
+
+/*
+ * Funicion que cambia el estado de una figura dependiendo de si esta o no en al area de interes para el juego
+ * (area de interes: volumen contenido ente el plano z=nave.z y el plano z=nave.z-30)
+ */
+void coalition_points(figura *fig, int points, int type){
+	if((*fig).through==0){
+		float z_delta;
+		if(type == 0){
+			z_delta = 0.1;
+		}else{
+			z_delta - 0.2;
+		}
+		float guard = (*fig).pos.z-objetos[0].pos.z;
+		if(guard > -0.1 && guard < 0.1){
+			float radio;
+			if(type == 0){
+				radio = TORUS_RADIO;
+			}else{
+				radio = BLANCO_RADIO;
+			}
+			guard = (*fig).pos.x - objetos[0].pos.x;
+			float guard2 = (*fig).pos.y - objetos[0].pos.y;
+			guard = guard*guard + guard2*guard2;
+			if(guard < radio*radio){
+				juego.puntos += points;
+				(*fig).through++;
+				if(points < 0){
+					printf("COLISION\n");
+				}
+				if (juego.puntos < 0){
+					juego.puntos = 0;
+				}
+			}
+		}
 	}
 }
 
@@ -210,21 +251,34 @@ void movimiento_nave(figura *fig){
 }
 
 /*
- * Funcino que dibuja un blanco en la posicion dada
+ * Funcino que dibuja un anillo en la posicion dada
  */
-void dibujar_blanco(float x, float y, float z){
+void dibujar_anillo(float x, float y, float z){
   glPushMatrix();
-    //glLoadIdentity();
     glTranslatef(x,y,z);
     glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , black);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , black);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , diffuse);
-    glutSolidTorus(0.025,0.25,20,20);
-    
+    glutSolidTorus(0.025,TORUS_RADIO,20,20);
   glPopMatrix();
-
-  //glFlush();
 }
+
+/*
+ * Funcino que dibuja un blanco en la posicion dada
+ */
+void dibujar_blanco(float x, float y, float z){
+  glPushMatrix();
+    glTranslatef(x,y,z);
+    glScalef(0.2,0.2,0.2);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , black);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , black);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , blue);
+    glutSolidOctahedron();
+    glRotatef(45.0,0.0,0.0,1.0);
+    glutSolidOctahedron(); 
+  glPopMatrix();
+}
+
 
 
 /*
@@ -302,7 +356,7 @@ void dibujar_lasers(){
       			glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , red);
       			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , red);
       			glTranslatef(objetos[i].pos.x,objetos[i].pos.y,objetos[i].pos.z);
-      			dibujar_cubo(0.1,0.5,0.1);
+      			dibujar_cubo(0.05,0.25,0.05);
       	      		glPopMatrix();
     	}
   	}
@@ -324,13 +378,22 @@ void dibujar_objetos(){
   //para cada anillo y blanco se evalua si va a estar en pantalla
   for (i = 0 ; i < 5 ; i++){
       screen_time(&anillos[i]);
+      coalition_points(&anillos[i],1,0);
       screen_time(&blancos[i]);
+      coalition_points(&blancos[i],-3,1);
   }
  
   //se dibujan los toros
   for (i = 0 ; i<5 ; i++){
     if(anillos[i].state != 0){
-      dibujar_blanco(anillos[i].pos.x,anillos[i].pos.y,anillos[i].pos.z);  
+      dibujar_anillo(anillos[i].pos.x,anillos[i].pos.y,anillos[i].pos.z);  
+    }
+  }
+  
+ //se dibujan los blancos
+  for (i = 0 ; i<5 ; i++){
+    if(blancos[i].state != 0){
+      dibujar_blanco(blancos[i].pos.x,blancos[i].pos.y,blancos[i].pos.z);  
     }
   }
 
@@ -635,6 +698,31 @@ void init(){
 	anillos[3].pos.z = -18;
 	anillos[4].pos.z = -23;
 
+	blancos[0].pos.z = -7;
+	blancos[0].pos.x = -0.2;
+	blancos[0].pos.y = 0.25;
+
+	blancos[1].pos.z = -11;
+	blancos[1].pos.x = 0.6;
+	blancos[1].pos.y = 0.25;
+
+	blancos[2].pos.z = -15;
+	blancos[2].pos.x = -0.15;
+	blancos[2].pos.y = -0.22;
+
+	blancos[3].pos.z = -20;
+	blancos[3].pos.x = 0.5;
+	blancos[3].pos.y = -0.1;
+
+	blancos[4].pos.z = -25;
+	blancos[4].pos.x = 0.0;
+	blancos[4].pos.y = 0.25;
+
+
+
+
+
+
 
 
 	juego.rate = 1.0;
@@ -652,7 +740,7 @@ GLvoid mouse_action(GLint button, GLint state, GLint x, GLint y){
                 case GLUT_LEFT_BUTTON:
 			if(objetos[1].state != 1){
       				objetos[1].pos = objetos[0].pos;
-				objetos[1].pos.z -= 1;
+				//objetos[1].pos.z -= 1;
 				objetos[1].state = 1;
 			}
 			 break;
