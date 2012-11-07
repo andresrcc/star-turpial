@@ -79,7 +79,7 @@ GLUquadricObj *quadratic;
 void print_pantalla(float x, float y, char *string)
 {
 	glPushMatrix();
-		glRasterPos3f(x, y, objetos[0].pos.z+2);
+		glRasterPos3f(x, y, objetos[0].pos.z+0.3);
 		int len, i;
 		len = (int) strlen(string);
 		for (i = 0; i < len; i++) {
@@ -94,7 +94,7 @@ void print_pantalla(float x, float y, char *string)
  */
 void screen_time(figura *fig){
 	float guard = (*fig).pos.z-objetos[0].pos.z;
-	if(guard < -30 || guard > 0){
+	if(guard < -30 || guard > 30){
 		(*fig).state = 0;
 	}else{
 		(*fig).state = 1;
@@ -188,11 +188,11 @@ void movimiento_nave(figura *fig){
 	movimiento(fig);
 
 	//se hace un loop del espacio en pantalla
-	if((*fig).pos.x>7.5){
-		(*fig).pos.x -= 15;
+	if((*fig).pos.x>3.3){
+		(*fig).pos.x -= 6.6;
 	}
-	if((*fig).pos.x<-7.5){
-		(*fig).pos.x += 15;
+	if((*fig).pos.x<-3.3){
+		(*fig).pos.x += 6.6;
 	}
 	if((*fig).pos.y>4.5){
 		(*fig).pos.y -= 9;
@@ -207,7 +207,7 @@ void movimiento_nave(figura *fig){
  */
 void dibujar_blanco(float x, float y, float z){
   glPushMatrix();
-    glLoadIdentity();
+    //glLoadIdentity();
     glTranslatef(x,y,z);
     glutSolidTorus(0.05,0.5,20,20);
   glPopMatrix();
@@ -272,11 +272,13 @@ void dibujar_nave(){
 	glPushMatrix();
   		glTranslatef(objetos[0].pos.x,objetos[0].pos.y,objetos[0].pos.z);
   		glRotatef(-180.0,0,1,0);
+		
   		glmUnitize(modelo_TURPIAL);
  		glmFacetNormals(modelo_TURPIAL);
   		glmVertexNormals(modelo_TURPIAL, 90.0);
   		glEnable(GL_COLOR_MATERIAL);
-  		glmDraw(modelo_TURPIAL, GLM_SMOOTH | GLM_MATERIAL);
+  		glScalef(0.2,0.2,0.2);
+		glmDraw(modelo_TURPIAL, GLM_SMOOTH | GLM_MATERIAL);
  	glPopMatrix();
 
 }
@@ -419,10 +421,10 @@ void movimiento_global(){
 void print_pantalla_global(){
 	print_pantalla(objetos[0].pos.x,objetos[0].pos.y,".posicion");
 	sprintf(juego.rate_str,"Rate : %f",juego.rate);
-	print_pantalla(0.0,3.5,juego.rate_str); 
-	print_pantalla(-6.0,-4.0,juego.fps_str);//Se imprime el FPS
+	print_pantalla(-0.12,0.45,juego.rate_str); 
+	print_pantalla(-.7,-0.45,juego.fps_str);//Se imprime el FPS
 	sprintf(juego.puntaje,"Puntos: %d",juego.puntos);
-	print_pantalla(4.0,-4.0,juego.puntaje);//Se imprime el puntaje
+	print_pantalla(0.5,-0.45,juego.puntaje);//Se imprime el puntaje
 }
 
 
@@ -442,7 +444,7 @@ void display(){
   //se pone la camara siempre detras de la nave
   gluLookAt(0.0, //Coordenada X
 	    0.0, //Coordenada Y
-	    objetos[0].pos.z+15.0, //Coordenada Z
+	    objetos[0].pos.z+2, //Coordenada Z
 	    0.0, 0.0, objetos[0].pos.z, //Posicion Inicial Camara
 	    0.0, 1, 0.0 //Vector UP En este caso, Z
   );
@@ -585,15 +587,15 @@ void init(){
         //velocidad
         objetos[0].vel.x = 0;
         objetos[0].vel.y = 0;
-        objetos[0].vel.z = -2.0;
+        objetos[0].vel.z = -1.5;
         //estado
         objetos[0].state = 1;
         //limite de velocidad
-        objetos[0].maxVel = 2.0;
+        objetos[0].maxVel = 1.5;
 	//parametro inertia
-        objetos[0].inertia = 1.0;
+        objetos[0].inertia = 0.75;
 	//parametro engineAcc
-        objetos[0].engineAcc = 2.0;
+        objetos[0].engineAcc = 1.0;
 
 
 
@@ -622,25 +624,12 @@ void init(){
 
 	//objetos[2] = toro;
         //posicion
-        anillos[0].pos.x = 0;
-        anillos[0].pos.y = 0;
-        anillos[0].pos.z = -35.0;
-        //aceleracion
-        anillos[0].acc.x = 0;
-        anillos[0].acc.y = 0;
-        anillos[0].acc.z = 0;
-        //velocidad
-        anillos[0].vel.x = 0;
-        anillos[0].vel.y = 0;
-        anillos[0].vel.z = 0.0;
-        //estado
-        anillos[0].state = 0;
-        //limite de velocidad
-        anillos[0].maxVel = 0.0;
-	//parametro inertia
-        anillos[0].inertia = 0.0;
-	//parametro engineAcc
-        anillos[0].engineAcc = 0.0;
+        anillos[0].pos.z = -5;
+	anillos[1].pos.z = -9;
+	anillos[2].pos.z = -13;
+	anillos[3].pos.z = -18;
+	anillos[4].pos.z = -23;
+
 
 
 	juego.rate = 1.0;
