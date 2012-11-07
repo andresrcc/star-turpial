@@ -284,11 +284,10 @@ void dibujar_nave(){
   		glTranslatef(objetos[0].pos.x,objetos[0].pos.y,objetos[0].pos.z);
   		glRotatef(-180.0,0,1,0);
 		
-  		glmUnitize(modelo_TURPIAL);
- 		glmFacetNormals(modelo_TURPIAL);
-  		glmVertexNormals(modelo_TURPIAL, 90.0);
-  		glEnable(GL_COLOR_MATERIAL);
-  		glScalef(0.2,0.2,0.2);
+		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , black);
+    		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , black);
+    		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , diffuse);
+  
 		glmDraw(modelo_TURPIAL, GLM_SMOOTH | GLM_MATERIAL);
  	glPopMatrix();
 
@@ -715,6 +714,18 @@ int main (int argc, char** argv){
 
   modelo_TURPIAL = glmReadOBJ("objetos/f-16.obj");
   if (!modelo_TURPIAL) exit(0);
+
+  glmUnitize(modelo_TURPIAL);
+  glmFacetNormals(modelo_TURPIAL);
+  glmVertexNormals(modelo_TURPIAL, 90.0);
+  //glEnable(GL_COLOR_MATERIAL);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , black);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , black);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , diffuse);
+  
+  glmScale(modelo_TURPIAL,0.2);
+
+
 
   glutDisplayFunc(display);
   glutReshapeFunc(cambios_ventana);
