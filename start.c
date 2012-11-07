@@ -209,7 +209,7 @@ void dibujar_blanco(float x, float y, float z){
   glPushMatrix();
     //glLoadIdentity();
     glTranslatef(x,y,z);
-    glutSolidTorus(0.05,0.5,20,20);
+    glutSolidTorus(0.025,0.25,20,20);
   glPopMatrix();
 
   //glFlush();
