@@ -104,7 +104,7 @@ void print_pantalla(float x, float y, char *string)
  */
 void screen_time(figura *fig){
 	float guard = (*fig).pos.z-objetos[0].pos.z;
-	if(guard < -30 || guard > 1){
+	if(guard < -30 || guard > 1 || (*fig).through != 0){
 		(*fig).state = 0;
 	}else{
 		(*fig).state = 1;
@@ -113,10 +113,8 @@ void screen_time(figura *fig){
 
 
 /*
- * Funicion que cambia el estado de una figura dependiendo de si esta o no en al area de interes para el juego
- * (area de interes: volumen contenido ente el plano z=nave.z y el plano z=nave.z-30)
  */
-void collition_points(figura *fig, int points, int type){
+void collition_points(figura *base,figura *fig, int points, int type){
 	if((*fig).through==0){
 		float z_delta;
 		if(type == 0){
@@ -124,7 +122,7 @@ void collition_points(figura *fig, int points, int type){
 		}else{
 			z_delta = 0.2;
 		}
-		float guard = (*fig).pos.z-objetos[0].pos.z;
+		float guard = (*fig).pos.z-(*base).pos.z;
 		if(guard > -z_delta && guard < z_delta){
 			float radio;
 			if(type == 0){
@@ -132,8 +130,8 @@ void collition_points(figura *fig, int points, int type){
 			}else{
 				radio = BLANCO_RADIO;
 			}
-			guard = (*fig).pos.x - objetos[0].pos.x;
-			float guard2 = (*fig).pos.y - objetos[0].pos.y;
+			guard = (*fig).pos.x - (*base).pos.x;
+			float guard2 = (*fig).pos.y - (*base).pos.y;
 			guard = guard*guard + guard2*guard2;
 			if(guard < radio*radio){
 				juego.puntos += points;
@@ -378,9 +376,12 @@ void dibujar_objetos(){
   //para cada anillo y blanco se evalua si va a estar en pantalla
   for (i = 0 ; i < 5 ; i++){
       screen_time(&anillos[i]);
-      collition_points(&anillos[i],1,0);
+      collition_points(&objetos[0],&anillos[i],1,0);
       screen_time(&blancos[i]);
-      collition_points(&blancos[i],-3,1);
+      if(objetos[1].state ==1){
+         collition_points(&objetos[1],&blancos[i],1,1);	
+      }
+      collition_points(&objetos[0],&blancos[i],-3,1);
   }
  
   //se dibujan los toros
