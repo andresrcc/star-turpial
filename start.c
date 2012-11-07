@@ -7,7 +7,7 @@
 #include "glm.h"
 #include <math.h>
 
-#define INERTIA_DELTA 0.001 //Delta de velocidad en el cual se considera que un objeto se detuvo completamente
+#define INERTIA_DELTA 0.005 //Delta de velocidad en el cual se considera que un objeto se detuvo completamente
 
 //registro que representa un vector de 3 dimensiones
 struct vector{
@@ -54,6 +54,10 @@ figura anillos[5]; //arreglo con todos los anillos del escenario
 
 //Colores de luces
 GLfloat lData4[] = {-1,1,0,0.0};
+GLfloat red[] = {1.0f,0.0f,0.0f,1.0f};
+GLfloat black[] = {0.0f,0.0f,0.0f,1.0f};
+GLfloat white[] = {1.0f,1.0f,1.0f,1.0f};
+GLfloat diffuse[] = {0.8f,0.8f,0.8f,1.0f};
 
 
 
@@ -82,7 +86,10 @@ void print_pantalla(float x, float y, char *string)
 		glRasterPos3f(x, y, objetos[0].pos.z+0.3);
 		int len, i;
 		len = (int) strlen(string);
-		for (i = 0; i < len; i++) {
+		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , white);
+      		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , white);
+      		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , white);
+      		for (i = 0; i < len; i++) {
 			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]);
 		}
 	glPopMatrix();
@@ -94,7 +101,7 @@ void print_pantalla(float x, float y, char *string)
  */
 void screen_time(figura *fig){
 	float guard = (*fig).pos.z-objetos[0].pos.z;
-	if(guard < -30 || guard > 30){
+	if(guard < -30 || guard > 1){
 		(*fig).state = 0;
 	}else{
 		(*fig).state = 1;
@@ -188,17 +195,17 @@ void movimiento_nave(figura *fig){
 	movimiento(fig);
 
 	//se hace un loop del espacio en pantalla
-	if((*fig).pos.x>3.3){
-		(*fig).pos.x -= 6.6;
+	if((*fig).pos.x>1.0){
+		(*fig).pos.x -= 2.0;
 	}
-	if((*fig).pos.x<-3.3){
-		(*fig).pos.x += 6.6;
+	if((*fig).pos.x<-1.0){
+		(*fig).pos.x += 2.0;
 	}
-	if((*fig).pos.y>4.5){
-		(*fig).pos.y -= 9;
+	if((*fig).pos.y>0.65){
+		(*fig).pos.y -= 1.3;
 	}
-	if((*fig).pos.y<-4.5){
-		(*fig).pos.y += 9;
+	if((*fig).pos.y<-0.65){
+		(*fig).pos.y += 1.3;
 	}
 }
 
@@ -209,7 +216,11 @@ void dibujar_blanco(float x, float y, float z){
   glPushMatrix();
     //glLoadIdentity();
     glTranslatef(x,y,z);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , black);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , black);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , diffuse);
     glutSolidTorus(0.025,0.25,20,20);
+    
   glPopMatrix();
 
   //glFlush();
@@ -288,18 +299,12 @@ void dibujar_lasers(){
 	for (i =1 ; i < 2 ; i++){
     	if(objetos[i].state != 0){
       		glPushMatrix();
-      			GLfloat red[] = {1.0f,0.0f,0.0f,1.0f};
-      			GLfloat black[] = {0.0f,0.0f,0.0f,1.0f};
-      			GLfloat diffuse[] = {0.8f,0.8f,0.8f,1.0f};
       			glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , red);
       			glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , red);
       			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , red);
       			glTranslatef(objetos[i].pos.x,objetos[i].pos.y,objetos[i].pos.z);
       			dibujar_cubo(0.1,0.5,0.1);
-      			glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , black);
-      			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , black);
-      			glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , diffuse);
-      		glPopMatrix();
+      	      		glPopMatrix();
     	}
   	}
 }
@@ -419,7 +424,8 @@ void movimiento_global(){
  * Funcion que imprime todos los datos necesarios para el juego en pantalla
  */
 void print_pantalla_global(){
-	print_pantalla(objetos[0].pos.x,objetos[0].pos.y,".posicion");
+	print_pantalla(-0.12,0.45," "); 
+
 	sprintf(juego.rate_str,"Rate : %f",juego.rate);
 	print_pantalla(-0.12,0.45,juego.rate_str); 
 	print_pantalla(-.7,-0.45,juego.fps_str);//Se imprime el FPS
