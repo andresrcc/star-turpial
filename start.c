@@ -116,16 +116,16 @@ void screen_time(figura *fig){
  * Funicion que cambia el estado de una figura dependiendo de si esta o no en al area de interes para el juego
  * (area de interes: volumen contenido ente el plano z=nave.z y el plano z=nave.z-30)
  */
-void coalition_points(figura *fig, int points, int type){
+void collition_points(figura *fig, int points, int type){
 	if((*fig).through==0){
 		float z_delta;
 		if(type == 0){
 			z_delta = 0.1;
 		}else{
-			z_delta - 0.2;
+			z_delta = 0.2;
 		}
 		float guard = (*fig).pos.z-objetos[0].pos.z;
-		if(guard > -0.1 && guard < 0.1){
+		if(guard > -z_delta && guard < z_delta){
 			float radio;
 			if(type == 0){
 				radio = TORUS_RADIO;
@@ -357,7 +357,7 @@ void dibujar_lasers(){
       			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , red);
       			glTranslatef(objetos[i].pos.x,objetos[i].pos.y,objetos[i].pos.z);
       			dibujar_cubo(0.05,0.25,0.05);
-      	      		glPopMatrix();
+       		glPopMatrix();
     	}
   	}
 }
@@ -378,9 +378,9 @@ void dibujar_objetos(){
   //para cada anillo y blanco se evalua si va a estar en pantalla
   for (i = 0 ; i < 5 ; i++){
       screen_time(&anillos[i]);
-      coalition_points(&anillos[i],1,0);
+      collition_points(&anillos[i],1,0);
       screen_time(&blancos[i]);
-      coalition_points(&blancos[i],-3,1);
+      collition_points(&blancos[i],-3,1);
   }
  
   //se dibujan los toros
