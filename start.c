@@ -910,9 +910,10 @@ void teclado_up (unsigned char tecla, int x, int y){
 	}
 }
 
-int coord_aleatoria(int inf, int sup){
+float coord_aleatoria(int inf, int sup, int flag){
   static int Init = 0;
   int coordenada;
+  float coord;
 
   if (Init = 0){
     srand(time(NULL));
@@ -920,7 +921,10 @@ int coord_aleatoria(int inf, int sup){
   }
 
   coordenada = (rand() % (sup - inf + 1) + inf);
-
+  if (flag == 1){
+  coord = coordenada *0.4;
+  return coord;
+  }
   return coordenada;
 
 }
@@ -933,16 +937,16 @@ void crear_nivel(){
   int i;
     for (i = 0 ; i < TORUS_NUM ; i++){
 
-      anillos[i].pos.z = coord_aleatoria(-60,0);
-      anillos[i].pos.x = coord_aleatoria(-2,2);
-      anillos[i].pos.y = coord_aleatoria(-1,1);
+      anillos[i].pos.z = coord_aleatoria(-60,0,0);
+      anillos[i].pos.x = coord_aleatoria(-2,2,1);
+      anillos[i].pos.y = coord_aleatoria(-1,1,1);
       //0.65 //1
     }
 
     for (i = 0 ; i < BLANCO_NUM ; i++){
-      blancos[i].pos.z = coord_aleatoria(-60,0);
-      blancos[i].pos.x = coord_aleatoria(-2,2);
-      blancos[i].pos.y = coord_aleatoria(-1,1);
+      blancos[i].pos.z = coord_aleatoria(-60,0,0);
+      blancos[i].pos.x = coord_aleatoria(-2,2,1);
+      blancos[i].pos.y = coord_aleatoria(-1,1,1);
     }
     /*	blancos[0].pos.z = -7;
 	blancos[0].pos.x = -0.2;
