@@ -898,15 +898,15 @@ void crear_nivel(){
     for (i = 0 ; i < TORUS_NUM ; i++){
 
       anillos[i].pos.z = coord_aleatoria(-60,0);
-      anillos[i].pos.x = coord_aleatoria(-1,1);
-      anillos[i].pos.y = coord_aleatoria(-0.65,0.65);
-
+      anillos[i].pos.x = coord_aleatoria(-2,2);
+      anillos[i].pos.y = coord_aleatoria(-1,1);
+      //0.65 //1
     }
 
     for (i = 0 ; i < BLANCO_NUM ; i++){
       blancos[i].pos.z = coord_aleatoria(-60,0);
-      blancos[i].pos.x = coord_aleatoria(-1,1);
-      blancos[i].pos.y = coord_aleatoria(-0.65,0.65);
+      blancos[i].pos.x = coord_aleatoria(-2,2);
+      blancos[i].pos.y = coord_aleatoria(-1,1);
     }
     /*	blancos[0].pos.z = -7;
 	blancos[0].pos.x = -0.2;
