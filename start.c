@@ -10,6 +10,8 @@
 #define INERTIA_DELTA 0.005 //Delta de velocidad en el cual se considera que un objeto se detuvo completamente
 #define TORUS_RADIO 0.25
 #define BLANCO_RADIO 0.2
+#define TORUS_NUM sizeof anillos / sizeof(anillos[1]) //num elementos en arreglo anillo 
+#define BLANCO_NUM sizeof blancos / sizeof(blancos[1]) //num elementos en arreglo blancos
 
 //registro que representa un vector de 3 dimensiones
 struct vector{
@@ -52,8 +54,8 @@ int movement_pressed_z = 0; //1. hay una tecla presionada que afecta el movimien
 GLuint texture; //textura de fondo
 datosJuego juego; //datos relevantes para el juego
 figura objetos[2]; //objetos[0]: nave, objetos[1]: laser
-figura blancos[5]; //arreglo con todos los blanco del escenario
-figura anillos[5]; //arreglo con todos los anillos del escenario
+figura blancos[40]; //arreglo con todos los blanco del escenario
+figura anillos[30]; //arreglo con todos los anillos del escenario
 
 //Colores de luces
 GLfloat lData4[] = {-1,1,0,0.0};
@@ -374,9 +376,12 @@ void dibujar_objetos(){
   dibujar_lasers();
 
   //para cada anillo y blanco se evalua si va a estar en pantalla
-  for (i = 0 ; i < 5 ; i++){
+  for (i = 0 ; i < TORUS_NUM ; i++){
       screen_time(&anillos[i]);
       collition_points(&objetos[0],&anillos[i],1,0);
+  }
+
+  for (i = 0 ; i < BLANCO_NUM ; i++){
       screen_time(&blancos[i]);
       if(objetos[1].state ==1){
          collition_points(&objetos[1],&blancos[i],1,1);	
@@ -385,14 +390,14 @@ void dibujar_objetos(){
   }
  
   //se dibujan los toros
-  for (i = 0 ; i<5 ; i++){
+  for (i = 0 ; i < TORUS_NUM ; i++){
     if(anillos[i].state != 0){
       dibujar_anillo(anillos[i].pos.x,anillos[i].pos.y,anillos[i].pos.z);  
     }
   }
   
  //se dibujan los blancos
-  for (i = 0 ; i<5 ; i++){
+  for (i = 0 ; i < BLANCO_NUM ; i++){
     if(blancos[i].state != 0){
       dibujar_blanco(blancos[i].pos.x,blancos[i].pos.y,blancos[i].pos.z);  
     }
@@ -639,6 +644,62 @@ void teclado_up (unsigned char tecla, int x, int y){
 	}
 }
 
+int coord_aleatoria(int inf, int sup){
+  static int Init = 0;
+  int coordenada;
+
+  if (Init = 0){
+    srand(time(NULL));
+    Init = 1;
+  }
+
+  coordenada = (rand() % (sup - inf + 1) + inf);
+
+  return coordenada;
+
+}
+
+
+/**
+ * Posiciona los anillos y toros en el juego
+ */
+void crear_nivel(){
+  int i;
+    for (i = 0 ; i < TORUS_NUM ; i++){
+
+      anillos[i].pos.z = coord_aleatoria(-60,0);
+      anillos[i].pos.x = coord_aleatoria(-1,1);
+      anillos[i].pos.y = coord_aleatoria(-0.65,0.65);
+
+    }
+
+    for (i = 0 ; i < BLANCO_NUM ; i++){
+      blancos[i].pos.z = coord_aleatoria(-60,0);
+      blancos[i].pos.x = coord_aleatoria(-1,1);
+      blancos[i].pos.y = coord_aleatoria(-0.65,0.65);
+    }
+    /*	blancos[0].pos.z = -7;
+	blancos[0].pos.x = -0.2;
+	blancos[0].pos.y = 0.25;
+
+	blancos[1].pos.z = -11;
+	blancos[1].pos.x = 0.6;
+	blancos[1].pos.y = 0.25;
+
+	blancos[2].pos.z = -15;
+	blancos[2].pos.x = -0.15;
+	blancos[2].pos.y = -0.22;
+
+	blancos[3].pos.z = -20;
+	blancos[3].pos.x = 0.5;
+	blancos[3].pos.y = -0.1;
+
+	blancos[4].pos.z = -25;
+	blancos[4].pos.x = 0.0;
+	blancos[4].pos.y = 0.25;
+    */
+
+}
 
 /*
  * Se realizan las inicializaciones pertinente para poder ejecutar el juego
@@ -690,42 +751,11 @@ void init(){
 	//parametro engineAcc
         objetos[1].engineAcc = 2.0;
 
-
 	//objetos[2] = toro;
         //posicion
-        anillos[0].pos.z = -5;
-	anillos[1].pos.z = -9;
-	anillos[2].pos.z = -13;
-	anillos[3].pos.z = -18;
-	anillos[4].pos.z = -23;
 
-	blancos[0].pos.z = -7;
-	blancos[0].pos.x = -0.2;
-	blancos[0].pos.y = 0.25;
-
-	blancos[1].pos.z = -11;
-	blancos[1].pos.x = 0.6;
-	blancos[1].pos.y = 0.25;
-
-	blancos[2].pos.z = -15;
-	blancos[2].pos.x = -0.15;
-	blancos[2].pos.y = -0.22;
-
-	blancos[3].pos.z = -20;
-	blancos[3].pos.x = 0.5;
-	blancos[3].pos.y = -0.1;
-
-	blancos[4].pos.z = -25;
-	blancos[4].pos.x = 0.0;
-	blancos[4].pos.y = 0.25;
-
-
-
-
-
-
-
-
+	crear_nivel();
+ 
 	juego.rate = 1.0;
 
 
