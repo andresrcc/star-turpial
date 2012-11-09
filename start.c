@@ -613,15 +613,15 @@ void dibujar_objetos(){
   //para cada anillo y blanco se evalua si va a estar en pantalla
   for (i = 0 ; i < TORUS_NUM ; i++){
       screen_time(&anillos[i]);
-      collision_points(&nave,&anillos[i],1,0);
+      collision_points(&nave,&anillos[i],1,COLLISION_NAVE_ANILLO);
   }
 
   for (i = 0 ; i < BLANCO_NUM ; i++){
       screen_time(&blancos[i]);
       if(laser.state ==1){
-         collision_points(&laser,&blancos[i],1,1);	
+         collision_points(&laser,&blancos[i],1,COLLISION_LASER_BLANCO);	
       }
-      collision_points(&nave,&blancos[i],-3,1);
+      collision_points(&nave,&blancos[i],-3,COLLISION_NAVE_BLANCO);
   }
  
   //se dibujan los toros
@@ -1003,7 +1003,7 @@ GLvoid mouse_action(GLint button, GLint state, GLint x, GLint y){
 			if (state == GLUT_DOWN){
 				for (i = 0 ; i<5 ; i++){
 					picking_ON(x,y);
-					for (i = 0 ; i < 5 ; i++){
+					for (i = 0 ; i < BLANCO_NUM ; i++){
 						glPushName(i);
 						dibujar_blanco(blancos[i].pos.x,blancos[i].pos.y,blancos[i].pos.z);  
 						glPopName();
