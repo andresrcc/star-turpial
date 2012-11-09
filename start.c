@@ -1088,7 +1088,7 @@ int main (int argc, char** argv){
   //Podemos convertir esto en una funcion 
   //posicion objeto una vez que tengamos los objetos
 
-  modelo_TURPIAL = glmReadOBJ("objetos/f-16.obj");
+  modelo_TURPIAL = glmReadOBJ("objetos/Feisar_Ship.obj");
   if (!modelo_TURPIAL) exit(0);
 
   glmUnitize(modelo_TURPIAL);
