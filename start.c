@@ -17,6 +17,9 @@
 #define COLLISION_LASER_BLANCO 2
 #define TORUS_NUM sizeof anillos / sizeof(anillos[1]) //num elementos en arreglo anillo 
 #define BLANCO_NUM sizeof blancos / sizeof(blancos[1]) //num elementos en arreglo blancos
+#define GAME_OVER 1
+#define GAME_ON 0
+
 
 //registro que representa un vector de 3 dimensiones
 struct vector{
@@ -60,11 +63,11 @@ struct gameData{
 int movement_pressed_x = 0; //1. hay una tecla presionada que afecta el movimiento en el eje x, 2.'1' es falso
 int movement_pressed_y = 0; //1. hay una tecla presionada que afecta el movimiento en el eje y, 2.'1' es falso
 int movement_pressed_z = 0; //1. hay una tecla presionada que afecta el movimiento en el eje z, 2.'1' es falso
-int shot = 0;
-int game_over = 0;
+int shot = 0; //si se disparo una laser
+int game_over = 0; //si se acabo el juego
 GLuint texture; //textura de fondo
 datosJuego juego; //datos relevantes para el juego
-figura *target;
+figura *target; //objetivo del laser
 GLuint selecBuffer[BUFFSIZE];//Buffer de seleccion para el picking
 pthread_t banda;
 figura objetos[2]; //objetos[0]: nave, objetos[1]: laser
@@ -73,16 +76,21 @@ figura anillos[30]; //arreglo con todos los anillos del escenario
 
 //Colores de luces
 GLfloat lData4[] = {-1,1,0,0.0};
-GLfloat red[] = {1.0f,0.0f,0.0f,1.0f};
+GLfloat red[] = {1.0f,0.0f,0.0f,0.0f};
 GLfloat black[] = {0.0f,0.0f,0.0f,1.0f};
 GLfloat white[] = {1.0f,1.0f,1.0f,1.0f};
 GLfloat diffuse[] = {0.8f,0.8f,0.8f,1.0f};
 GLfloat blue[] = {0.0f,0.0f,1.0f,1.0f};
-GLfloat yellow[] = {1.0f,1.0f,0.0f,1.0f};
+GLfloat yellow[] = {1.0f,1.0f,0.0f,0.0f};
 GLfloat lData0[] = {1,1,100,0.0f};
 GLfloat lData1[] = {0.05, 0.05, 0.05,1.0f};
 GLfloat lData2[] = {1,1,1,1};
 GLfloat lData3[] = {1,1,1,1};
+GLfloat anilloAmbient[] = {0.25f,0.25f,0.25f,1.0f};
+GLfloat anilloDiffuse[] = {0.4f,0.4f,0.4f,1.0f};
+GLfloat anilloSpecular[] = {0.774597f,0.774597f,0.774597f,1.0f};
+GLfloat anilloShininess[] = {0.6f};
+
 
 /**
  *Objetos
@@ -134,7 +142,7 @@ void print_pantalla(float x, float y, char *string)
  */
 void print_pantalla_global(){
 	print_pantalla(-0.12,0.45," "); 
-	if(game_over == 1){
+	if(game_over == GAME_OVER){
    		 print_pantalla(-0.2,0,"GAME OVER");
    		 print_pantalla(-0.5,-0.1,"presione 'y' para reiniciar o 'q' para salir");
   	} 
@@ -159,6 +167,7 @@ void print_pantalla_global(){
 void shoot_ahead(){
 	shot = 0;
 	if(laser.state != 1){
+		glEnable(GL_LIGHT1);
       		laser.pos = nave.pos;
 		laser.vel.x = 0;
 		laser.vel.y = 0;
@@ -175,6 +184,7 @@ void shoot(figura *target){
 	shot = 0;
 	//Si el laser no esta en pantalla
 	if(laser.state != 1){
+		glEnable(GL_LIGHT1);
 		//primero se calcula el modulo del vector posicion del objetivo respecto a la nave
  	     	float modulo;
 		laser.vel.x = 100*((*target).pos.x - nave.pos.x);
@@ -253,7 +263,7 @@ void movimiento_nave(figura *fig){
 
 	//Game Over?
 	if(nave.pos.z < -60){
-		game_over = 1;
+		game_over = GAME_OVER;
 	}
 
 	//Si hay alguna tecla de movimiento presionada que afecte el movimiento en el eje x, se aplica una desaceleracion o
@@ -316,6 +326,7 @@ void movimiento_global(){
 	if(laser.state != 0){
 		movimiento(&laser);
 	}else{
+		glDisable(GL_LIGHT1);
 		laser.time = glutGet(GLUT_ELAPSED_TIME)*0.001;
 	}
 }
@@ -482,9 +493,10 @@ void picking_OFF(){
 void dibujar_anillo(float x, float y, float z){
   glPushMatrix();
     glTranslatef(x,y,z);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , black);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , black);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , diffuse);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT , anilloAmbient);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , anilloSpecular);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , anilloDiffuse);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, anilloShininess);
     glutSolidTorus(0.025,TORUS_RADIO,20,20);
   glPopMatrix();
 }
@@ -511,12 +523,14 @@ void dibujar_blanco(float x, float y, float z){
  */
 void dibujar_explosion(float x, float y, float z){
   glPushMatrix();
+    //glEnable(GL_LIGHT2);
     glTranslatef(x,y,z);
     glScalef(0.2,0.2,0.2);
     glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , black);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , red);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , yellow);
     glutSolidSphere(0.7,10,10);
+    //glDisable(GL_LIGHT2);
   glPopMatrix();
 }
 
@@ -594,7 +608,6 @@ void dibujar_lasers(){
     	if(laser.state != 0){
 	GLfloat pos[] = {laser.pos.x, laser.pos.y, laser.pos.z, 1.0f};
 	glLightfv(GL_LIGHT1 , GL_POSITION, pos);
-	glEnable(GL_LIGHT1);
 		
       		glPushMatrix();
       			glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , red);
@@ -852,13 +865,13 @@ void teclado (unsigned char tecla, int x, int y){
         break;
      case 'y':
        //restart:
-       if(game_over ==1){
+       if(game_over == GAME_OVER){
          init();
-	 game_over = 0;
+	 game_over = GAME_ON;
        }
        break;
      case 'q':
-	if(game_over == 1){
+	if(game_over == GAME_OVER){
           al_salir();
         }
         break;
@@ -1097,11 +1110,16 @@ int main (int argc, char** argv){
   glLightfv(GL_LIGHT0,GL_DIFFUSE,lData2);
   glLightfv(GL_LIGHT0,GL_SPECULAR,lData3);
 
+  
 
 
   glLightfv(GL_LIGHT1, GL_AMBIENT, black);
   glLightfv(GL_LIGHT1, GL_DIFFUSE, red);
   glLightfv(GL_LIGHT1, GL_SPECULAR, red);
+
+  glLightfv(GL_LIGHT2, GL_AMBIENT, black);
+  glLightfv(GL_LIGHT2, GL_DIFFUSE, yellow);
+  glLightfv(GL_LIGHT2, GL_SPECULAR, yellow);
 
 
 
@@ -1114,7 +1132,6 @@ int main (int argc, char** argv){
   glmUnitize(modelo_TURPIAL);
   glmFacetNormals(modelo_TURPIAL);
   glmVertexNormals(modelo_TURPIAL, 90.0);
-  //glEnable(GL_COLOR_MATERIAL);
   glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , black);
   glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , black);
   glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , diffuse);
