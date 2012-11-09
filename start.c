@@ -388,7 +388,6 @@ void collision_points(figura *base,figura *fig, int points, int type){
 			//se marca el segundo objeto como que ya dejo de interesarnos
 			(*fig).through = 1;
 			//el objeto es destruido
-		//	(*fig).dead = 1;
 			//se evita que el puntaje sea negativo
 			if (juego.puntos < 0){
 				juego.puntos = 0;
@@ -438,7 +437,7 @@ void processHits (GLint hits, GLuint buffer[])
 	ptr = ptrNames;
 	shot = 1;
 	target = &blancos[*ptr];
-	//shoot(&blancos[*ptr]);
+	printf("PICKING %d\n",*ptr);
 }
 
 
