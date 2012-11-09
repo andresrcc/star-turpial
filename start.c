@@ -19,7 +19,8 @@
 #define BLANCO_NUM sizeof blancos / sizeof(blancos[1]) //num elementos en arreglo blancos
 #define GAME_OVER 1
 #define GAME_ON 0
-
+#define LASER_SHOT 1
+#define LASER_NOT_SHOT 0
 
 //registro que representa un vector de 3 dimensiones
 struct vector{
@@ -63,8 +64,8 @@ struct gameData{
 int movement_pressed_x = 0; //1. hay una tecla presionada que afecta el movimiento en el eje x, 2.'1' es falso
 int movement_pressed_y = 0; //1. hay una tecla presionada que afecta el movimiento en el eje y, 2.'1' es falso
 int movement_pressed_z = 0; //1. hay una tecla presionada que afecta el movimiento en el eje z, 2.'1' es falso
-int shot = 0; //si se disparo una laser
-int game_over = 0; //si se acabo el juego
+int shot = LASER_NOT_SHOT; //si se disparo una laser
+int game_over = GAME_ON; //si se acabo el juego
 GLuint texture; //textura de fondo
 datosJuego juego; //datos relevantes para el juego
 figura *target; //objetivo del laser
@@ -90,6 +91,11 @@ GLfloat anilloAmbient[] = {0.25f,0.25f,0.25f,1.0f};
 GLfloat anilloDiffuse[] = {0.4f,0.4f,0.4f,1.0f};
 GLfloat anilloSpecular[] = {0.774597f,0.774597f,0.774597f,1.0f};
 GLfloat anilloShininess[] = {0.6f};
+GLfloat blancoAmbient[] = {0.19125f,0.0735f,0.0225f,1.0f};
+GLfloat blancoDiffuse[] = {0.7038f,0.27048f,0.0828f,1.0f};
+GLfloat blancoSpecular[] = {0.256777f,0.13722f,0.086014f,1.0f};
+GLfloat blancoShininess[] = {0.1f};
+
 
 
 /**
@@ -165,9 +171,8 @@ void print_pantalla_global(){
  * Hace que la nave dispare hacia adelante
  */
 void shoot_ahead(){
-	shot = 0;
+	shot = LASER_NOT_SHOT;
 	if(laser.state != 1){
-		glEnable(GL_LIGHT1);
       		laser.pos = nave.pos;
 		laser.vel.x = 0;
 		laser.vel.y = 0;
@@ -181,10 +186,9 @@ void shoot_ahead(){
  * Esta funcion se encarga de disparar hacia un objetivo
  */
 void shoot(figura *target){
-	shot = 0;
+	shot = LASER_NOT_SHOT;
 	//Si el laser no esta en pantalla
 	if(laser.state != 1){
-		glEnable(GL_LIGHT1);
 		//primero se calcula el modulo del vector posicion del objetivo respecto a la nave
  	     	float modulo;
 		laser.vel.x = 100*((*target).pos.x - nave.pos.x);
@@ -457,7 +461,7 @@ void processHits (GLint hits, GLuint buffer[])
 		ptr += names+2;
 	}
 	ptr = ptrNames;
-	shot = 1;
+	shot = LASER_SHOT;
 	target = &blancos[*ptr];
 }
 
@@ -493,7 +497,7 @@ void picking_OFF(){
 void dibujar_anillo(float x, float y, float z){
   glPushMatrix();
     glTranslatef(x,y,z);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT , anilloAmbient);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT , black);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , anilloSpecular);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , anilloDiffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, anilloShininess);
@@ -508,9 +512,10 @@ void dibujar_blanco(float x, float y, float z){
   glPushMatrix();
     glTranslatef(x,y,z);
     glScalef(0.2,0.2,0.2);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , black);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , black);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT , black);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , blancoSpecular);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , blue);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, blancoShininess);
     glutSolidOctahedron();
     glRotatef(45.0,0.0,0.0,1.0);
     glutSolidOctahedron(); 
@@ -760,7 +765,7 @@ void display(){
  
   //calculos de movimiento antes de dibujar la escena
   movimiento_global(); 
-  if(shot ==1){
+  if(shot == LASER_SHOT){
     if(target != NULL){
       shoot(target);
     }else{
@@ -1050,8 +1055,8 @@ GLvoid mouse_action(GLint button, GLint state, GLint x, GLint y){
 					}
 					picking_OFF();
 				}
-				if(shot==0){
-					shot = 1;
+				if(shot==LASER_NOT_SHOT){
+					shot = LASER_SHOT;
 					target = NULL;
 				}
 				//shoot_ahead();	
@@ -1108,24 +1113,20 @@ int main (int argc, char** argv){
  
   glShadeModel(GL_SMOOTH);
   glEnable(GL_LIGHTING);
+  //LUZ AMBIENTAL
   glEnable(GL_LIGHT0);
   glLightfv(GL_LIGHT0, GL_POSITION, lData0);
   glLightfv(GL_LIGHT0,GL_AMBIENT,lData1);
   glLightfv(GL_LIGHT0,GL_DIFFUSE,lData2);
   glLightfv(GL_LIGHT0,GL_SPECULAR,lData3);
-
-  
-
-
+  //LUZ DEL LASER
   glLightfv(GL_LIGHT1, GL_AMBIENT, black);
   glLightfv(GL_LIGHT1, GL_DIFFUSE, red);
   glLightfv(GL_LIGHT1, GL_SPECULAR, red);
-
+  //LUZ DE EXPLOSIONES
   glLightfv(GL_LIGHT2, GL_AMBIENT, black);
   glLightfv(GL_LIGHT2, GL_DIFFUSE, yellow);
   glLightfv(GL_LIGHT2, GL_SPECULAR, yellow);
-
-
 
   //Podemos convertir esto en una funcion 
   //posicion objeto una vez que tengamos los objetos
@@ -1139,11 +1140,9 @@ int main (int argc, char** argv){
   glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , black);
   glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , black);
   glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , diffuse);
-  
   glmScale(modelo_TURPIAL,0.2);
 
-
-
+  //funciones de GLUT
   glutDisplayFunc(display);
   glutReshapeFunc(cambios_ventana);
   glutKeyboardFunc(teclado);
@@ -1153,10 +1152,8 @@ int main (int argc, char** argv){
   glutCloseFunc(al_salir);
   glEnable(GL_DEPTH_TEST);
   init();
+
+  //main loop
   glutMainLoop();
-
- // pthread_join( banda, NULL);
-
-
   return 0;
 }
