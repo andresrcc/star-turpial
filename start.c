@@ -61,6 +61,7 @@ int movement_pressed_x = 0; //1. hay una tecla presionada que afecta el movimien
 int movement_pressed_y = 0; //1. hay una tecla presionada que afecta el movimiento en el eje y, 2.'1' es falso
 int movement_pressed_z = 0; //1. hay una tecla presionada que afecta el movimiento en el eje z, 2.'1' es falso
 int shot = 0;
+int game_over = 0;
 GLuint texture; //textura de fondo
 datosJuego juego; //datos relevantes para el juego
 figura *target;
@@ -133,7 +134,10 @@ void print_pantalla(float x, float y, char *string)
  */
 void print_pantalla_global(){
 	print_pantalla(-0.12,0.45," "); 
-
+	if(game_over == 1){
+   		 print_pantalla(-0.2,0,"GAME OVER");
+   		 print_pantalla(-0.5,-0.1,"presione 'y' para reiniciar o 'q' para salir");
+  	} 
 	sprintf(juego.rate_str,"Rate : %f",juego.rate);
 	print_pantalla(-0.12,0.45,juego.rate_str); 
 	print_pantalla(-.7,-0.45,juego.fps_str);//Se imprime el FPS
@@ -176,7 +180,6 @@ void shoot(figura *target){
 		laser.vel.x = 100*((*target).pos.x - nave.pos.x);
 		laser.vel.y = 100*((*target).pos.y - nave.pos.y);
 		laser.vel.z = 100*((*target).pos.z - nave.pos.z);
-		//printf("LA DIRECCION ES (%f,%f,%f)\n",laser.vel.x,laser.vel.y,laser.vel.z);
 		modulo = pow(laser.vel.x,2) +  pow(laser.vel.y,2) + pow(laser.vel.z,2);
 		modulo = sqrt(modulo);
 		//utilizando el vector direccion le damos un vector velocidad a nuestro laser para que impacte con el objetivo
@@ -247,6 +250,12 @@ void movimiento(figura *fig){
  * Esta funcion recibe una figura y calcula su posicion respecto al tiempo, considera que la figura puede ser movida por el usuario
  */
 void movimiento_nave(figura *fig){
+
+	//Game Over?
+	if(nave.pos.z < -60){
+		game_over = 1;
+	}
+
 	//Si hay alguna tecla de movimiento presionada que afecte el movimiento en el eje x, se aplica una desaceleracion o
 	//o se detiene completamente si el modulo de su velocidad  esta dentro del rango dado por INERTIA_DELTA
         if(movement_pressed_x == 0){
@@ -306,6 +315,8 @@ void movimiento_global(){
 	screen_time(&laser);
 	if(laser.state != 0){
 		movimiento(&laser);
+	}else{
+		laser.time = glutGet(GLUT_ELAPSED_TIME)*0.001;
 	}
 }
 
@@ -437,7 +448,6 @@ void processHits (GLint hits, GLuint buffer[])
 	ptr = ptrNames;
 	shot = 1;
 	target = &blancos[*ptr];
-	printf("PICKING %d\n",*ptr);
 }
 
 
@@ -730,6 +740,8 @@ void drawBackground() {
  * Funcion display de glut que dibuja de nuevo la escena
  */
 void display(){
+
+  
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
  
@@ -836,6 +848,18 @@ void teclado (unsigned char tecla, int x, int y){
         }else{
         	juego.rate_store = juego.rate;
         	juego.rate = 0;
+        }
+        break;
+     case 'y':
+       //restart:
+       if(game_over ==1){
+         init();
+	 game_over = 0;
+       }
+       break;
+     case 'q':
+	if(game_over == 1){
+          al_salir();
         }
         break;
      case '+':
@@ -970,11 +994,11 @@ void init(){
         //velocidad
         laser.vel.x = 0;
         laser.vel.y = 0;
-        laser.vel.z = -5.0;
+        laser.vel.z = -17.0;
         //estado
         laser.state = 0;
         //limite de velocidad
-        laser.maxVel = 5.0;
+        laser.maxVel = 17.0;
 	//parametro inertia
         laser.inertia = 1.0;
 	//parametro engineAcc
@@ -1047,8 +1071,8 @@ void idle(){
 
 
 
-void close(){
-//	exit(0);	
+void al_salir(){
+	exit(0);	
 }
 
 
@@ -1059,9 +1083,6 @@ void close(){
 
 
 int main (int argc, char** argv){
-  
-  //int iret1 = pthread_create( &banda, NULL, musicos, NULL);
-  
   //Inicializamos la ventana
   glutInit(&argc,argv);
   glutInitWindowSize(600,400);
@@ -1108,12 +1129,12 @@ int main (int argc, char** argv){
   glutKeyboardUpFunc(teclado_up);
   glutMouseFunc(mouse_action);
   glutIdleFunc(idle);
-  //glutCloseFunc(close);
+  glutCloseFunc(al_salir);
   glEnable(GL_DEPTH_TEST);
   init();
   glutMainLoop();
 
-  //pthread_join( banda, NULL);
+ // pthread_join( banda, NULL);
 
 
   return 0;
