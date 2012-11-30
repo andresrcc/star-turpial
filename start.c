@@ -21,6 +21,7 @@
 #define GAME_ON 0
 #define LASER_SHOT 1
 #define LASER_NOT_SHOT 0
+#define TEXTURE_MOVEMENT 0.5
 
 //registro que representa un vector de 3 dimensiones
 struct vector{
@@ -57,7 +58,10 @@ struct gameData{
 	char rate_str[50];//representacion en string de la taza
 };typedef struct gameData datosJuego;
 
-
+struct listaFigura{
+	figura esta;
+	struct listaFigura * next;
+};typedef struct listaFigura listaFiguras; 
 
 //-----------------------------------------------------------VARIABLES GLOBALES---------------------------
 
@@ -67,6 +71,7 @@ int movement_pressed_z = 0; //1. hay una tecla presionada que afecta el movimien
 int shot = LASER_NOT_SHOT; //si se disparo una laser
 int game_over = GAME_ON; //si se acabo el juego
 GLuint texture; //textura de fondo
+GLuint texture_suelo;
 datosJuego juego; //datos relevantes para el juego
 figura *target; //objetivo del laser
 GLuint selecBuffer[BUFFSIZE];//Buffer de seleccion para el picking
@@ -626,12 +631,30 @@ void dibujar_lasers(){
 
 
 
+void dibujar_suelo(){
+	glPushMatrix();
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture( GL_TEXTURE_2D, texture_suelo );
+		float z = nave.pos.z;
+		float avanzado_textura = -z * TEXTURE_MOVEMENT;
+		glBegin(GL_QUADS);
+			glNormal3f(0,1,0);
+			glTexCoord2d(2.0,avanzado_textura+15.0);glVertex3f(1.0,-0.65,z-30.0);
+			glTexCoord2d(2.0,avanzado_textura);glVertex3f(1.0,-0.65,z);
+			glTexCoord2d(0.0,avanzado_textura);glVertex3f(-1.0,-0.65,z);
+			glTexCoord2d(0.0,avanzado_textura+15.0);glVertex3f(-1.0,-0.65,z-30.0);
+		glEnd();
+		glDisable(GL_TEXTURE_2D);
+	glPopMatrix();
+}
+
 
 /*
  * Funcion que dibuja a todos los objetos que se veran en la escena
  */
 void dibujar_objetos(){
   int i = 0;
+  dibujar_suelo();
   //Se dibuja la nave
   dibujar_nave();
   //Se dibujan los lasers
@@ -724,6 +747,7 @@ GLuint loadBMP(char * imagepath){
 void drawBackground() {
 	glPushMatrix(); 
         	glEnable(GL_TEXTURE_2D);
+		glBindTexture( GL_TEXTURE_2D, texture );
 		float z = nave.pos.z - 30.0; 
         	glBegin( GL_QUADS ); 
         	        glNormal3d(0,0,-1); 
@@ -793,7 +817,7 @@ void display(){
 
   //se dibuja el background
   glDisable(GL_LIGHTING);
-  drawBackground();
+  drawBackground();//DESCOMENTAR ESTO
   glEnable(GL_LIGHTING);
 
   //se dibujan todos los objetos
@@ -1035,7 +1059,9 @@ void init(){
 
 
 	texture = loadBMP("stars.bmp");
-	glBindTexture( GL_TEXTURE_2D, texture );
+	texture_suelo = loadBMP("bridge.bmp");
+
+	
 }
 
 /*
