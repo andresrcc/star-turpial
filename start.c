@@ -667,10 +667,10 @@ void dibujar_suelo(){
 		float avanzado_textura = -z * TEXTURE_MOVEMENT;
 		glBegin(GL_QUADS);
 			glNormal3f(0,1,0);
-			glTexCoord2d(2.0,avanzado_textura+15.0);glVertex3f(1.0,-0.65,z-30.0);
-			glTexCoord2d(2.0,avanzado_textura);glVertex3f(1.0,-0.65,z);
-			glTexCoord2d(0.0,avanzado_textura);glVertex3f(-1.0,-0.65,z);
-			glTexCoord2d(0.0,avanzado_textura+15.0);glVertex3f(-1.0,-0.65,z-30.0);
+			glTexCoord2d(10.0,avanzado_textura+15.0);glVertex3f(9.0,-0.65,z-30.0);
+			glTexCoord2d(10.0,avanzado_textura);glVertex3f(9.0,-0.65,z);
+			glTexCoord2d(-10.0,avanzado_textura);glVertex3f(-9.0,-0.65,z);
+			glTexCoord2d(-10.0,avanzado_textura+15.0);glVertex3f(-9.0,-0.65,z-30.0);
 		glEnd();
 		glDisable(GL_TEXTURE_2D);
 	glPopMatrix();
