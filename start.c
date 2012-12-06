@@ -7,6 +7,9 @@
 #include "glm.h"
 #include <math.h>
 #include <pthread.h>
+#include "AL/al.h"
+#include "AL/alut.h"
+#include "SDL/SDL.h"
 
 #define INERTIA_DELTA 0.005 //Delta de velocidad en el cual se considera que un objeto se detuvo completamente
 #define TORUS_RADIO 0.25
@@ -22,6 +25,29 @@
 #define LASER_SHOT 1
 #define LASER_NOT_SHOT 0
 #define TEXTURE_MOVEMENT 0.5
+
+
+//Buffer de sonido y fuente de sonido
+ALuint	sound_buffer;
+ALuint	source;
+
+
+//Variables de Carga de Sonido
+Uint8 *data;
+SDL_AudioSpec wav_spec;
+Uint32 size;
+
+//Posicion y velocidad de la fuente de sonido
+ALfloat src_pos[]={ 0.0, 0.0, 1.0};
+ALfloat src_vel[]={ 0.0, 0.0, 1.0};
+
+//Posicion, velocidad y origen del listener(oyente)
+ALfloat ls_pos[]={0.0,0.0,0.0};
+ALfloat ls_vel[]={0.0,0.0,0.0};
+ALfloat	ls_origin[]={0.0,0.0,1.0,0.0,1.0,0.0};
+
+
+
 
 //registro que representa un vector de 3 dimensiones
 struct vector{
@@ -72,6 +98,7 @@ int shot = LASER_NOT_SHOT; //si se disparo una laser
 int game_over = GAME_ON; //si se acabo el juego
 GLuint texture; //textura de fondo
 GLuint texture_suelo;
+GLuint texture_nave;
 datosJuego juego; //datos relevantes para el juego
 figura *target; //objetivo del laser
 GLuint selecBuffer[BUFFSIZE];//Buffer de seleccion para el picking
@@ -607,7 +634,8 @@ void dibujar_nave(){
 		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , black);
     		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , black);
     		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , diffuse);
-  
+		glEnable(GL_TEXTURE_2D);
+  		glBindTexture(GL_TEXTURE_2D, texture_nave);
 		glmDraw(modelo_TURPIAL, GLM_SMOOTH | GLM_MATERIAL);
  	glPopMatrix();
 
@@ -783,7 +811,6 @@ void drawBackground() {
  */
 void display(){
 
-  
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
  
@@ -1060,7 +1087,6 @@ void init(){
 
 	texture = loadBMP("stars.bmp");
 	texture_suelo = loadBMP("bridge.bmp");
-
 	
 }
 
@@ -1089,6 +1115,93 @@ GLvoid mouse_action(GLint button, GLint state, GLint x, GLint y){
 			}
 			break;
         }
+}
+
+ALboolean MusicaActiva(ALuint source) {
+    ALuint state;
+    if(alIsSource(source) == AL_FALSE) { //Comprueba si es una fuente
+        return AL_FALSE;
+    }
+    state =AL_INITIAL;
+
+#ifdef _WIN32
+    alGetSourcei(source,AL_SOURCE_STATE, &state);  //Obtiene el estado de la fuente para windows
+#endif
+#ifdef _LINUX
+    alGetSourceiv(source,AL_SOURCE_STATE, &state); // Obtiene el estado de la fuente para Linux
+#endif
+    switch (state) {
+     case AL_PLAYING:
+     return AL_TRUE;   // Si la fuente se esta reproduciendo devuelve AL_TRUE en caso contrario AL_FALSE
+
+    default:
+    break;
+}
+return AL_FALSE;
+}
+
+
+void init_musica(){
+  //Verifica la carga del archivo de sonido
+  char loaded;
+
+  //Iniciar OpenAL
+  alutInit(NULL,0);
+  //Generando buffer...
+  alGenBuffers(1,&sound_buffer);
+
+  //Si falla la creacion del buffer
+  if((alGetError()) != AL_NO_ERROR){
+    printf("Error al crear buffer");
+    exit(1);
+  }
+
+  //Cargando archivo de sonido
+  loaded = SDL_LoadWAV("musica.wav", &wav_spec,&data,&size);
+
+  //Si falla la carga del archivo
+  if(loaded==NULL){
+    printf("No se pudo cargar la musica de fondo");
+    exit(1);
+  }
+
+  //Metemos el sonido en el buffer
+  alBufferData(sound_buffer,AL_FORMAT_STEREO16,data,size,wav_spec.freq);
+
+  //Liberamos el sonido cargado que ya esta en el buffer
+  SDL_FreeWAV(data);
+
+  //Generamos la fuente del sonido en el juego
+  alGenSources(1,&source);
+
+  //Si ocurre un error al crear la fuente de sonido
+  if(alGetError() != AL_NO_ERROR){
+    printf("No se pudo crear la fuente de sonido");
+    exit(1);
+  }
+
+
+  //Posicion, Velocidad, Fuente de sonido
+  alSourcefv(source,AL_POSITION,src_pos);
+  alSourcefv(source,AL_VELOCITY,src_pos);
+
+  //Posicion, Velocidad, Origen del oyente 
+  alListenerfv(AL_POSITION,ls_pos);
+  alListenerfv(AL_VELOCITY,ls_vel);
+  alListenerfv(AL_ORIENTATION,ls_origin);
+
+  //Pasamos el sonido del buffer a la fuente de sonido
+  alSourcei(source,AL_BUFFER,sound_buffer);
+
+  //Si la musica no esta activa, press play!
+  if(!MusicaActiva(source)){
+    alSourcePlay(source);
+  }
+
+  //Como reiniciar la musica? O_O
+  // alSourceStop(source);
+
+  //alutExit();
 }
 
 /*
@@ -1137,6 +1250,9 @@ int main (int argc, char** argv){
   glutInitWindowPosition(10,50);
   glutCreateWindow("Star Turpial");
  
+  //Musica de fondo //la ponemos en idle?
+  init_musica();
+
   glShadeModel(GL_SMOOTH);
   glEnable(GL_LIGHTING);
   //LUZ AMBIENTAL
@@ -1159,7 +1275,8 @@ int main (int argc, char** argv){
 
   modelo_TURPIAL = glmReadOBJ("objetos/Feisar_Ship.obj");
   if (!modelo_TURPIAL) exit(0);
-
+  //Textura de la nave
+  //texture_nave = loadBMP("diffuse.bmp"); 
   glmUnitize(modelo_TURPIAL);
   glmFacetNormals(modelo_TURPIAL);
   glmVertexNormals(modelo_TURPIAL, 90.0);
@@ -1167,6 +1284,7 @@ int main (int argc, char** argv){
   glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR , black);
   glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , diffuse);
   glmScale(modelo_TURPIAL,0.2);
+
 
   //funciones de GLUT
   glutDisplayFunc(display);

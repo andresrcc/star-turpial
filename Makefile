@@ -20,7 +20,7 @@ endif
 
 CC      = gcc
 CFLAGS  = -Wall -Wno-format -m32 $(OPTFLAGS)
-LDFLAGS = -lGL -lglut -lGLU -m32
+LDFLAGS = -lGL -lglut -lGLU -m32 -lopenal -lSDL -lalut
 
 # Mac OS X: OpenGL and GLUT are frameworks, override LDFLAGS above with these
 #LDFLAGS = -framework OpenGL -framework GLUT
