@@ -20,6 +20,7 @@
 #define COLLISION_LASER_BLANCO 2
 #define TORUS_NUM sizeof anillos / sizeof(anillos[1]) //num elementos en arreglo anillo 
 #define BLANCO_NUM sizeof blancos / sizeof(blancos[1]) //num elementos en arreglo blancos
+#define EDIF_NUM sizeof edificios / sizeof(edificios[1]) //num elementos en arreglo edificios
 #define GAME_OVER 1
 #define GAME_ON 0
 #define LASER_SHOT 1
@@ -99,6 +100,7 @@ int game_over = GAME_ON; //si se acabo el juego
 GLuint texture; //textura de fondo
 GLuint texture_suelo;
 GLuint texture_nave;
+GLuint texture_edificio;
 datosJuego juego; //datos relevantes para el juego
 figura *target; //objetivo del laser
 GLuint selecBuffer[BUFFSIZE];//Buffer de seleccion para el picking
@@ -106,7 +108,7 @@ pthread_t banda;
 figura objetos[2]; //objetos[0]: nave, objetos[1]: laser
 figura blancos[40]; //arreglo con todos los blanco del escenario
 figura anillos[30]; //arreglo con todos los anillos del escenario
-
+figura edificios[15]; //arreglo con todos los edificios del escenario
 //Colores de luces
 GLfloat lData4[] = {-1,1,0,0.0};
 GLfloat red[] = {1.0f,0.0f,0.0f,0.0f};
@@ -380,15 +382,6 @@ void movimiento_global(){
 
 //--------------------------------------------LOGICA DEL JUEGO--------------------------------------------
 
-
-
-void musicos(void *ptr){
-	system("mpg123 audio/theme.mp3");
-}
-
-
-
-
 /*
  * Funicion que cambia el estado de una figura dependiendo de si esta o no en al area de interes para el juego
  * (area de interes: volumen contenido ente el plano z=nave.z y el plano z=nave.z-30)
@@ -512,13 +505,6 @@ void picking_OFF(){
 
 
 
-
-
-
-
-
-
-
 //---------------------------------------------------FUNCIONES PARA DIBUJAR EN PANTALLA----------------------------------
 
 
@@ -570,8 +556,6 @@ void dibujar_explosion(float x, float y, float z){
     //glDisable(GL_LIGHT2);
   glPopMatrix();
 }
-
-
 
 
 /*
@@ -676,6 +660,19 @@ void dibujar_suelo(){
 	glPopMatrix();
 }
 
+//Dibuja los edificios en la escena 
+
+void dibujar_edificio(float x, float y, float z){
+  glPushMatrix();
+      glEnable(GL_TEXTURE_2D);
+      glBindTexture(GL_TEXTURE_2D,texture_edificio);
+      glTranslatef(x,y,z);
+      dibujar_cubo(0.5,1,1);
+      glDisable(GL_TEXTURE_2D);
+  glPopMatrix();
+
+}
+
 
 /*
  * Funcion que dibuja a todos los objetos que se veran en la escena
@@ -688,7 +685,7 @@ void dibujar_objetos(){
   //Se dibujan los lasers
   dibujar_lasers();
 
-  //para cada anillo y blanco se evalua si va a estar en pantalla
+  //para cada anillo, blanco y edificio se evalua si va a estar en pantalla
   for (i = 0 ; i < TORUS_NUM ; i++){
       screen_time(&anillos[i]);
       collision_points(&nave,&anillos[i],1,COLLISION_NAVE_ANILLO);
@@ -702,12 +699,30 @@ void dibujar_objetos(){
       collision_points(&nave,&blancos[i],-3,COLLISION_NAVE_BLANCO);
   }
  
+  //Con edificios, no depende del laser. 
+  //Pero si chocas te quitan 2 puntos
+  for (i = 0 ; i < EDIF_NUM ; i++){
+      screen_time(&edificios[i]);
+      //    if(laser.state ==1){
+      //  collision_points(&laser,&blancos[i],1,COLLISION_LASER_BLANCO);	
+      // }
+      //collision_points(&nave,&blancos[i],-3,COLLISION_NAVE_BLANCO);
+  }
+
   //se dibujan los toros
   for (i = 0 ; i < TORUS_NUM ; i++){
     if(anillos[i].state != 0){
          dibujar_anillo(anillos[i].pos.x,anillos[i].pos.y,anillos[i].pos.z);  
     }
   }
+
+//se dibujan los edificios
+  for (i = 0 ; i < EDIF_NUM ; i++){
+    if(edificios[i].state != 0){
+         dibujar_edificio(edificios[i].pos.x,0.0,edificios[i].pos.z);  
+    }
+  }
+  
   
  //se dibujan los blancos
   for (i = 0 ; i < BLANCO_NUM ; i++){
@@ -794,13 +809,6 @@ void drawBackground() {
 
 
 
-
-
-
-
-
-
-
 //--------------------------------------------------------GLUT/OPENGL------------------------------------------------
 
 
@@ -877,8 +885,6 @@ void cambios_ventana(int w, int h){
   glutPostRedisplay();
 
 }
-
-
 
 
 /*
@@ -1004,6 +1010,13 @@ void crear_nivel(){
       blancos[i].pos.x = coord_aleatoria(-2,2,1);
       blancos[i].pos.y = coord_aleatoria(-1,1,1);
     }
+
+    for (i = 0 ; i < EDIF_NUM ; i++){
+      edificios[i].pos.z = coord_aleatoria(-60,0,0);
+      edificios[i].pos.x = coord_aleatoria(-2,2,1);
+      edificios[i].pos.y = coord_aleatoria(-1,1,1);
+    }
+
     /*	blancos[0].pos.z = -7;
 	blancos[0].pos.x = -0.2;
 	blancos[0].pos.y = 0.25;
@@ -1087,6 +1100,7 @@ void init(){
 
 	texture = loadBMP("stars.bmp");
 	texture_suelo = loadBMP("bridge.bmp");
+        texture_edificio = loadBMP("edificio.bmp");
 	
 }
 
